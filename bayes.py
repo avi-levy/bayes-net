@@ -17,13 +17,13 @@ class event(object):
                 if tableHeading.startswith('P('):# P(A) = val
                         left, right = tuple(tableHeading.split("="))
                         self.name = left.split("(")[1].split(")")[0]
-                        self.data[{}] = float(right)
-                        print "Created event named %s with data %f and no parents" % (self.name, self.data)
+                        self.data = float(right)
+                        #print "Created event named %s with data %f and no parents" % (self.name, self.data)
                         return
                 parents, name = tuple(tableHeading.split('|')) # there can be a parse error here
                 self.parents = parents.split()# important: order is preserved
                 self.name = name
-                print "Create event named %s and parents %s" % (self.name, self.parents)
+                #print "Create event named %s and parents %s" % (self.name, self.parents)
         def setProbabilities(self, row):
                 '''
                 ignore row if startswith -
@@ -34,12 +34,17 @@ class event(object):
                 '''
                 if row.startswith('-'):
                         return
-
-                bools, value = tuple(row.split())
-                self.data[bools.split()] = float(value)
-                print "Data for event %s is now %s" % (self.name, self.data)
-        
-usage = "usage: bayes write usage string"
+                #print "called with %s" % row
+                bools, value = tuple(row.split("|"))
+                #print "split %s" % bools.split()
+                #print "len %d" % len(tuple(bools.split()))
+                self.data[tuple(bools.split())] = float(value)
+                #print "Data for event %s is now %s" % (self.name, self.data)
+        def __repr__(self):
+                return "Event %s:\nParents: %s\nData:\n%s" % (self.name, self.parents, self.data)
+        def __str__(self):
+                return self.__repr__()
+usage = "usage: bayes <bayesnet> <enum|elim> <query>\n<bayesnet> is the name of the file containing the bayes net.\n<enum|elim> specify the algorithm to use.\n<query> is the probability to compute, specified in quotes."
 def end(message=usage):
   print message
   exit(0)
@@ -52,7 +57,9 @@ filename, infile = argv
 cur = None
 with open(infile) as infile:
   for line in infile:
+    line = line.strip()
     if line:
+      #print "parsing line %s" % line
       if cur:
         cur.setProbabilities(line)
       else:
@@ -60,4 +67,8 @@ with open(infile) as infile:
     else:
       events.append(cur)
       cur = None
-      
+if cur:
+        events.append(cur)
+for i in events:
+  print i
+
