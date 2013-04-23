@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from sys import argv
+from net import *
 
 usage = "usage: bayes <bayesnet> <enum|elim> <query>\n<bayesnet> is the name of the file containing the bayes net.\n<enum|elim> specify the algorithm to use.\n<query> is the probability to compute, specified in quotes."
 def end(message=usage):
@@ -30,3 +31,4 @@ except Exception:
         end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)"')
         
 bn = net(infile)
+print bn

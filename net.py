@@ -1,3 +1,6 @@
+class inference(object):
+        def __init__(self, net):
+                self.net = net
 class net(object):
         def __init__(self, file):
                 self.entries = []
@@ -14,13 +17,13 @@ class net(object):
                                 self.add(entry)
                                 entry = None
                 if entry:
-                        events.append(entry)                
+                        self.entries.append(entry)                
 
         def add(self, entry):
                 self.entries.append(entry)
                 self.vars.add(entry.name)
         def __repr__(self):
-                return "Bayes Net with vars %s and entries:\n%s" % (self.vars, self.entries)
+                return "Net over %s:\n%s" % (self.vars, self.entries)
                 
 class event(object):
         def __init__(self, tableHeading):
@@ -59,4 +62,4 @@ class event(object):
                 self.data[tuple(bools.split())] = float(value)
                 #print "Data for event %s is now %s" % (self.name, self.data)
         def __repr__(self):
-                return "Event %s:\nParents: %s\nData:\n%s" % (self.name, self.parents, self.data)
+                return "\nEvent %s | %s:\n%s" % (self.name, self.parents, self.data)
