@@ -25,16 +25,23 @@ try:
         query = query.strip("P").strip("()")
         # Now query looks like C|A=f,E=t or C
         parts = query.split("|")
-        if len(parts) is 1:
-                parts[1] = ""
-        first, last = tuple(parts)
-        var = first.split("(")[1]
-        givens = {}
-        for term in last.strip(")").split(","):
-                name, value = tuple(term.split("="))
-                givens[name] = value
+        
+        var = parts[0]
+        assignments = {}
+        
+        if len(parts) > 1:
+                for term in parts[1].split(","):
+                        if term:
+                                name, value = tuple(term.split("="))
+                                assignments[name] = value
 except Exception:
         end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
         
+print var
+print assignments
+
 bn = net(infile)
 print bn
+
+print "Start computation of %s | %s" % (var, assignments)
+bn.compute(var,assignments)
