@@ -1,4 +1,16 @@
 class net(object):
+        printTrivial = False # default value is False - don't print empty products; this matches the spec. For debugging purposes, I like to keep it on True.
+        truths = ['f','t'] # default truth sort order
+
+        @staticmethod
+        def normalized(q):# assume q is nonempty
+                sum = 0.0
+                for k in q:
+                        sum += q[k]
+                for k in q:
+                        q[k] /= sum
+                return q
+                        
         def __init__(self, file):
                 self.entries = {}
                 entry = None
@@ -22,22 +34,14 @@ class net(object):
                 
         def compute(self, event, conditions):
                 q = {}
-                for truth in ['t','f']:
+                for truth in net.truths:
                         conditions[event] = truth
                         q[truth] = self.brute(self.entries.keys(), conditions)
                 return net.normalized(q)
-        
-        @staticmethod
-        def normalized(q):# assume q is nonempty
-                sum = 0.0
-                for k in q:
-                        sum += q[k]
-                for k in q:
-                        q[k] /= sum
-                return q
-                
+
         def brute(self, variables, conditions):
                 ret = (list(variables), dict(conditions))
+                shouldPrint = net.printTrivial
                 if not variables:
                         ret += (1.0,)
                 else:
@@ -45,15 +49,18 @@ class net(object):
                         if var in conditions.keys():
                                 ret += (self.entries[var].lookup(conditions) * self.brute(variables, conditions),)
                         else:
+                                shouldPrint = True
                                 s = 0.0
-                                for truth in ['t','f']:
+                                for truth in net.truths:
                                         conditions[var] = truth
                                         #print "=========="
                                         #print self.entries
                                         #print var
                                         s += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
                                 ret += (s,)
-                print "%s | %s = %s" % ret
+                
+                if shouldPrint:
+                        print "%s | %s = %s" % ret
                 return ret[2]
                         
         def first(self, variables):
@@ -125,8 +132,7 @@ class event(object):
                                 for key in self.data:
                                         if self.satisfiesConditions(key, conditions):
                                                 return self.data[key] if conditions[self.name] else 1 - self.data[key]
-#                        except Exception:
-                        except AssertionError:                               
+                        except Exception:
                                 exit("Oh no; the conditions weren't specific enough!")
                 exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
         def satisfiesConditions(self, key, conditions):
