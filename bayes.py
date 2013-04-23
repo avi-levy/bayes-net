@@ -49,7 +49,7 @@ def end(message=usage):
   print message
   exit(0)
 
-if len(argv) != 2:
+if len(argv) != 4:
   end()
   
 filename, infile, alg, query = argv
@@ -57,7 +57,12 @@ filename, infile, alg, query = argv
 if not alg in ["enum", "elim"]:
         end("Unknown algorithm; please use enum or elim")
 try:
-        first, last = tuple(query.split('"')[1].split("|"))
+        query = query.split('"')
+        if len(query) > 1:
+                query = query[1]
+        else:
+                query = query[0]
+        first, last = tuple(query.split("|"))
         requestedEvent = first.split("(")[1]
         givens = {}
         for term in last.strip(")").split(","):
@@ -66,8 +71,8 @@ try:
 except Exception:
         end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)"')
         
-print requestedEvent        
-print givens
+#print requestedEvent        
+#print givens
 
 cur = None
 with open(infile) as infile:
@@ -84,6 +89,5 @@ with open(infile) as infile:
       cur = None
 if cur:
         events.append(cur)
-for i in events:
-  print i
 
+# events is a list of bayes net data. requestedEvent is the event we are trying to compute; givens is the condition under which we compute it
