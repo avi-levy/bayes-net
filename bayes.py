@@ -52,14 +52,29 @@ def end(message=usage):
 if len(argv) != 2:
   end()
   
-filename, infile = argv
+filename, infile, alg, query = argv
+
+if not alg in ["enum", "elim"]:
+        end("Unknown algorithm; please use enum or elim")
+try:
+        first, last = tuple(query.split('"')[1].split("|"))
+        requestedEvent = first.split("(")[1]
+        givens = {}
+        for term in last.strip(")").split(","):
+                name, value = tuple(term.split("="))
+                givens[name] = value
+except Exception:
+        end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)"')
+        
+print requestedEvent        
+print givens
 
 cur = None
 with open(infile) as infile:
   for line in infile:
     line = line.strip()
     if line:
-      #print "parsing line %s" % line
+      # print "parsing line %s" % line
       if cur:
         cur.setProbabilities(line)
       else:
