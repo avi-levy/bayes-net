@@ -10,7 +10,13 @@ class net(object):
                 for k in q:
                         q[k] /= sum
                 return q
-                        
+
+        @staticmethod
+        def formatmy(conditions):
+                ret = ""
+                for key in sorted(conditions.keys()):
+                        ret += "%s=%s " % (key, conditions[key])
+                return ret
         def __init__(self, file):
                 self.entries = {}
                 entry = None
@@ -39,29 +45,33 @@ class net(object):
                         q[truth] = self.brute(self.entries.keys(), conditions)
                 return net.normalized(q)
 
-        def brute(self, variables, conditions):
-                ret = (list(variables), dict(conditions))
+        def brute(self, _variables, _conditions):
+                variables, conditions = list(_variables), dict(_conditions)
+                printsofar = "%s | %s =" % (variables, net.formatmy(conditions))
                 shouldPrint = net.printTrivial
                 if not variables:
-                        ret += (1.0,)
+                        ret = 1.0
                 else:
                         shouldPrint = True                
                         var = self.first(variables) # this means var's parents have been assigned
                         if var in conditions.keys():
-                                ret += (self.entries[var].lookup(conditions) * self.brute(variables, conditions),)
+                                ret = self.entries[var].lookup(conditions) * self.brute(variables, conditions)
                         else:
-                                s = 0.0
+                                ret = 0.0
                                 for truth in net.truths:
                                         conditions[var] = truth
                                         #print "=========="
                                         #print self.entries
                                         #print var
-                                        s += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
-                                ret += (s,)
+                                        lookup = self.entries[var].lookup(conditions)
+                                        recurse = self.brute(variables, conditions)
+                                        print "+ %s * %s" % (lookup, recurse)
+                                        #print "Did lookup of %s | %s and got %f" % (var, conditions, lookup)
+                                        ret += ( lookup * recurse )
                 
                 if shouldPrint:
-                        print "%s | %s = %s" % ret
-                return ret[2]
+                        print "%s %s" % (printsofar, ret)
+                return ret
                         
         def first(self, variables):
                 # filter out variables that have parents also among these variables
