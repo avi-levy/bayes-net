@@ -134,14 +134,14 @@ class event(object):
         def lookup(self, conditions):# assume that our event is already set in the conditions
                 if isinstance(self.data, float):
                         if self.name in conditions.keys():
-                                return self.data if conditions[self.name] else 1 - self.data
+                                return self.data if (conditions[self.name] == 't') else 1 - self.data
                 if isinstance(self.data, dict):
                         # iterate through our data entries, until one of them matches the condition
                         # we assume that the conditions permit exactly one valid entry
                         try:
                                 for key in self.data:
                                         if self.satisfiesConditions(key, conditions):
-                                                return self.data[key] if conditions[self.name] else 1 - self.data[key]
+                                                return self.data[key] if (conditions[self.name] == 't') else 1 - self.data[key]
                         except Exception:
                                 exit("Oh no; the conditions weren't specific enough!")
                 exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
