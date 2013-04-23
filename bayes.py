@@ -21,14 +21,20 @@ try:
                 query = query[1]
         else:
                 query = query[0]
-        first, last = tuple(query.split("|"))
+        # Do this in two steps to avoid accidentally removing an initial or terminal P inside the parenthesis - since a variable is allowed to be named P
+        query = query.strip("P").strip("()")
+        # Now query looks like C|A=f,E=t or C
+        parts = query.split("|")
+        if len(parts) is 1:
+                parts[1] = ""
+        first, last = tuple(parts)
         var = first.split("(")[1]
         givens = {}
         for term in last.strip(")").split(","):
                 name, value = tuple(term.split("="))
                 givens[name] = value
 except Exception:
-        end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)"')
+        end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
         
 bn = net(infile)
 print bn
