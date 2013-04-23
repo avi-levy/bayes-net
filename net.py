@@ -37,25 +37,24 @@ class net(object):
                 return q
                 
         def brute(self, variables, conditions):
-                print "%s | %s" % (variables, conditions),
+                ret = (list(variables), dict(conditions))
                 if not variables:
-                        ret = 1.0
-                        print ret
-                        return ret
-                var = self.first(variables) # this means var's parents have been assigned
-                if var in conditions.keys():
-                        ret = self.entries[var].lookup(conditions) * self.brute(variables, conditions)
-                        print ret
-                        return ret
-                ret = 0.0
-                for truth in ['t','f']:
-                        conditions[var] = truth
-                        #print "=========="
-                        #print self.entries
-                        #print var
-                        ret += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
-                print ret
-                return ret
+                        ret += (1.0,)
+                else:
+                        var = self.first(variables) # this means var's parents have been assigned
+                        if var in conditions.keys():
+                                ret += (self.entries[var].lookup(conditions) * self.brute(variables, conditions),)
+                        else:
+                                s = 0.0
+                                for truth in ['t','f']:
+                                        conditions[var] = truth
+                                        #print "=========="
+                                        #print self.entries
+                                        #print var
+                                        s += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
+                                ret += (s,)
+                print "%s | %s = %s" % ret
+                return ret[2]
                         
         def first(self, variables):
                 # filter out variables that have parents also among these variables
