@@ -65,7 +65,7 @@ class net(object):
                                         #print var
                                         lookup = self.entries[var].lookup(conditions)
                                         recurse = self.brute(variables, conditions)
-                                        print "+ %s * %s" % (lookup, recurse)
+                                        print "var is %s=%s and: + %s * %s" % (var, conditions[var], lookup, recurse)
                                         #print "Did lookup of %s | %s and got %f" % (var, conditions, lookup)
                                         ret += ( lookup * recurse )
                 
