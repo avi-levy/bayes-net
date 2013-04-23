@@ -59,7 +59,9 @@ class net(object):
         def first(self, variables):
                 # filter out variables that have parents also among these variables
                 def isOrphan(var):
+                        print "Getting parents of %s"% var
                         for parent in self.entries[var].parents:
+                                print parent
                                 if parent in variables:
                                         return False
                         return True
@@ -68,7 +70,9 @@ class net(object):
                 print "Orphans left: %s" % orphans
                 
                 # then pick the first alphabetically
-                return variables.remove(min(orphans))
+                print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
+
+                return variables.pop(variables.index(min(orphans)))
                 
 class event(object):
         def __init__(self, tableHeading):
@@ -82,13 +86,14 @@ class event(object):
                 self.data = {}                
                 if tableHeading.startswith('P('):# P(A) = val
                         left, right = tuple(tableHeading.split("="))
-                        self.name = left.split("(")[1].split(")")[0]
+                        self.name = left.strip().strip("P").strip("()")
+#                        self.name = left.split("(")[1].split(")")[0]
                         self.data = float(right)
                         #print "Created event named %s with data %f and no parents" % (self.name, self.data)
                         return
                 parents, name = tuple(tableHeading.split('|')) # there can be a parse error here
                 self.parents = parents.split()# important: order is preserved
-                self.name = name
+                self.name = name.strip()
                 #print "Create event named %s and parents %s" % (self.name, self.parents)
         def setProbabilities(self, row):
                 '''
@@ -121,8 +126,8 @@ class event(object):
                                         if satisfiesConditions(key, conditions):
                                                 return self.data[key] if conditions[self.name] else 1 - self.data[key]
                         except Exception:
-                                end("Oh no; the conditions weren't specific enough!")
-                end("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
+                                exit("Oh no; the conditions weren't specific enough!")
+                exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
         def satisfiesConditions(self, key, conditions):
                 for i, truth in enumerate(key):
                         if conditions[self.parents[i]] != truth:

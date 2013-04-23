@@ -37,11 +37,9 @@ try:
 except Exception:
         end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
         
-print var
-print assignments
+print "You asked me to compute: %s | %s" % (var, assignments)
 
 bn = net(infile)
-print bn
 
-print "Start computation of %s | %s" % (var, assignments)
+print "Start computation."
 bn.compute(var,assignments)
