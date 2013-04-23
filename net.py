@@ -45,11 +45,11 @@ class net(object):
                 if not variables:
                         ret += (1.0,)
                 else:
+                        shouldPrint = True                
                         var = self.first(variables) # this means var's parents have been assigned
                         if var in conditions.keys():
                                 ret += (self.entries[var].lookup(conditions) * self.brute(variables, conditions),)
                         else:
-                                shouldPrint = True
                                 s = 0.0
                                 for truth in net.truths:
                                         conditions[var] = truth

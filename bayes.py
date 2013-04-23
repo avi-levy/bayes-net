@@ -42,4 +42,4 @@ print "You asked me to compute: %s | %s" % (var, assignments)
 bn = net(infile)
 
 print "Start computation."
-bn.compute(var,assignments)
+print bn.compute(var,assignments)
