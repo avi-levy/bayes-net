@@ -50,9 +50,9 @@ class net(object):
                 ret = 0.0
                 for truth in ['t','f']:
                         conditions[var] = truth
-                        print "=========="
-                        print self.entries
-                        print var
+                        #print "=========="
+                        #print self.entries
+                        #print var
                         ret += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
                 print ret
                 return ret
@@ -131,7 +131,7 @@ class event(object):
                                 exit("Oh no; the conditions weren't specific enough!")
                 exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
         def satisfiesConditions(self, key, conditions):
-                print "Checking key %s if satisfies %s" % (key, conditions)
+                #print "Checking key %s if satisfies %s" % (key, conditions)
                 for i, truth in enumerate(key):
                         if conditions[self.parents[i]] != truth:
                                 return False
