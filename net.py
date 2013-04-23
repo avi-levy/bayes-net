@@ -25,8 +25,9 @@ class net(object):
                 for truth in ['t','f']:
                         conditions[event] = truth
                         q[truth] = self.brute(self.entries.keys(), conditions)
-                return normalized(q)
+                return net.normalized(q)
         
+        @staticmethod
         def normalized(q):# assume q is nonempty
                 sum = 0.0
                 for k in q:
@@ -43,7 +44,7 @@ class net(object):
                         return ret
                 var = self.first(variables) # this means var's parents have been assigned
                 if var in conditions.keys():
-                        ret = self.entries[var].lookup(conditions) * brute(variables, conditions)
+                        ret = self.entries[var].lookup(conditions) * self.brute(variables, conditions)
                         print ret
                         return ret
                 ret = 0.0
@@ -52,25 +53,25 @@ class net(object):
                         print "=========="
                         print self.entries
                         print var
-                        ret += self.entries[var].lookup(conditions) * brute(variables, conditions)
+                        ret += self.entries[var].lookup(conditions) * self.brute(variables, conditions)
                 print ret
                 return ret
                         
         def first(self, variables):
                 # filter out variables that have parents also among these variables
                 def isOrphan(var):
-                        print "Getting parents of %s"% var
+                        #print "Getting parents of %s"% var
                         for parent in self.entries[var].parents:
-                                print parent
+                                #print parent
                                 if parent in variables:
                                         return False
                         return True
                         
                 orphans = filter(isOrphan, variables)
-                print "Orphans left: %s" % orphans
+                #print "Orphans left: %s" % orphans
                 
                 # then pick the first alphabetically
-                print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
+                #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
 
                 return variables.pop(variables.index(min(orphans)))
                 
@@ -123,12 +124,14 @@ class event(object):
                         # we assume that the conditions permit exactly one valid entry
                         try:
                                 for key in self.data:
-                                        if satisfiesConditions(key, conditions):
+                                        if self.satisfiesConditions(key, conditions):
                                                 return self.data[key] if conditions[self.name] else 1 - self.data[key]
-                        except Exception:
+#                        except Exception:
+                        except AssertionError:                               
                                 exit("Oh no; the conditions weren't specific enough!")
                 exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
         def satisfiesConditions(self, key, conditions):
+                print "Checking key %s if satisfies %s" % (key, conditions)
                 for i, truth in enumerate(key):
                         if conditions[self.parents[i]] != truth:
                                 return False
