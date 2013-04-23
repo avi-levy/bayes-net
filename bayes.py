@@ -36,11 +36,8 @@ class event(object):
                         return
 
                 bools, value = tuple(row.split())
-                assignment = {}
-                for i, coord in enumerate(bools.split()):# parse error if coord not in ['t','f'] or upper
-                        assignment[self.parents[i]] = (coord in ['t', 'T'])
-                self.data[assignment] = float(value)
-                print "Added assignment %s with value %f to event %s" % (assignment, float(value), self.name)
+                self.data[bools.split()] = float(value)
+                print "Data for event %s is now %s" % (self.name, self.data)
         
 usage = "usage: bayes write usage string"
 def end(message=usage):
