@@ -21,7 +21,7 @@ class net(object):
                 '''
                 Make a factor for the variable, given evidence.
                 '''
-                
+                print "Making factor from %s, evidence is %s" % (variable, evidence)
                 known = evidence.keys()
 
                 if variable in known:
@@ -39,12 +39,76 @@ class net(object):
                         for i in range(len(key)):
                                 asDict[inputs[i]] = key[i]                        
                         # add our key values to the evidence
+
                         full = dict(asDict.items() + evidence.items())
-                        
+
                         lookup = self.entries[variable].lookup(full)
-                        ret.data[key] = lookup if (full[variable] == 't') else 1 - lookup # the result of our lookup
+                        print "Reading key: %s full: %s, so full[%s] = %s, raw lookup = %s" % (asDict, full, variable, full[variable], lookup)
+                        ret.data[key] = lookup # if (full[variable] == 't') else 1 - lookup # the result of our lookup
                         # see line 209ish return self.data[key] if (conditions[self.name] == 't') else 1 - self.data[key]
                 return ret
+        def elim(self, query, evidence):
+                factors = []
+                vars = list(self.entries.keys())
+                
+                def next(_vars):
+                        # make sure none of the remaining variables have us as a parent
+                        def noChildren(var):
+                                for another in _vars:
+                                        if var in self.entries[var].parents:
+                                                return False
+                                return True
+                                
+                        candidates = filter(noChildren, _vars)
+                        #print "Orphans left: %s" % orphans
+                        
+                        # then pick the first alphabetically
+                        #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
+                        
+                        # TODO: filter out the candidates by factor size as well (so only minimal factor sizes remain)
+                        
+                        def factorSize(var):
+                                #print "Compute factor size for %s" % var
+                                known = evidence.keys()
+                                #print "Known: %s" % known
+
+                                if var in known:
+                                        inputs = []
+                                else:
+                                        inputs = [var]
+                                for parent in self.entries[var].parents:
+                                        if parent not in known:
+                                                inputs.append(parent)
+                                #print "Inputs: %s" % inputs
+                                return len(inputs)
+
+                        minFactor = None
+                        for c in candidates:
+                                size = factorSize(c)
+                                if not minFactor or minFactor > size:
+                                        minFactor = size
+                        #print "Candidates: %s" % candidates
+                        #print "factorsize %s" % map(factorSize, candidates)
+                        #print "minfactor %s" % minFactor
+                        candidates = filter(lambda x: factorSize(x) == minFactor, candidates)
+
+                        return _vars.pop(_vars.index(min(candidates)))                   
+                
+                
+                while vars:
+                        var = next(vars)
+                        print "Processing %s, remaining: %s" % (var, vars)
+                        factors.append(self.factor(var, evidence))
+                        print "Factors:\n%s" % "\n".join(map(factor.__repr__,factors))
+                        if var is not query and var not in evidence.keys():
+                                print "Noticed that %s is hidden, so sum it out" % var
+
+                                current = factor.product(factors)
+                                current.sumOut(var)
+
+                                factors = [current]
+                                print "Factors after summing:\n%s" % "\n".join(map(factor.__repr__,factors))
+                return factor.product(factors)                
         def __init__(self, file):
                 self.entries = {}
                 entry = None
@@ -66,45 +130,6 @@ class net(object):
         def __repr__(self):
                 return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
                 
-
-        def elim(self, query, evidence):
-                factors = []
-                vars = list(self.entries.keys())
-                
-                def next(_vars):
-                        # make sure none of the remaining variables have us as a parent
-                        def noChildren(var):
-                                for another in _vars:
-                                        if var in self.entries[var].parents:
-                                                return False
-                                return True
-                                
-                        candidates = filter(noChildren, _vars)
-                        #print "Orphans left: %s" % orphans
-                        
-                        # then pick the first alphabetically
-                        #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
-                        
-                        # TODO: filter out the candidates by factor size as well (so only minimal factor sizes remain)
-
-                        return _vars.pop(_vars.index(min(candidates)))                   
-                
-                
-                while vars:
-                        var = next(vars)
-                        print "Processing %s, remaining: %s" % (var, vars)
-                        factors.append(self.factor(var, evidence))
-                        print "Factors: %s" % factors
-                        if var is not query and var not in evidence.keys():
-                                print "Noticed that %s is hidden, so sum it out" % var
-
-                                current = factor.product(factors)
-                                current.sumOut(var)
-
-                                factors = [current]
-                                print "Factors afer summing: %s" % factors
-                return factor.product(factors)
-                
         def compute(self, event, conditions, algtype):
                 if algtype is 0:
                         q = {}
@@ -112,8 +137,11 @@ class net(object):
                                 conditions[event] = truth
                                 q[truth] = self.enumerate(self.entries.keys(), conditions)
                 else:
-                        q = self.elim(event, conditions)
-                return net.normalized(q)
+#                        q = self.elim(event, conditions).data
+                        ret = self.elim(event, conditions)
+                        print ret.data
+                        print ret.vars
+                #return net.normalized(q)
 
         def enumerate(self, _variables, _conditions):
                 variables, conditions = list(_variables), dict(_conditions)
