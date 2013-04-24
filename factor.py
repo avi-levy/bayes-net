@@ -2,11 +2,17 @@ import random
 from net import *
 
 class factor(object):
-        def __init__(self, vars):
-                self.vars = list(vars)
+        def __init__(self, thing):
+                if isinstance(thing, factor): # copy constructor
+                        self.vars = list(thing.vars)
+                        self.data = dict(thing.data)
+                        return
+                self.vars = list(thing) # coerce to list
                 self.data = {} # maps tuples of {T,F}^|vars| -> values
                 self.fill((),self.assign)
                 random.seed()
+                return
+
                 
         def assign(self, assignment):
                 self.data[assignment] = random.random()
@@ -65,8 +71,8 @@ class factor(object):
         @staticmethod
         def product(factors): # if factors is empty we error
                 base = factors.pop()
-                print base
-                print factors
+                #print base
+                #print factors
                 if not factors:
                         return base
                 return base.times(factor.product(factors))
