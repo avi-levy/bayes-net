@@ -17,6 +17,28 @@ class factor(object):
                         return
                 for truth in net.truths:
                         self.fill(assigned + (truth,), operation)
+                        
+        def sumOut(self, var): # mutate the data structure
+                if not var in self.vars:
+                        return
+                # fullData = dict(self.data)
+
+                i = self.vars.index(var)
+                self.vars.pop(i)
+                                
+                def sumAssign(assignment):
+                        s = 0.0
+                        for truth in net.truths:
+                                a = list(assignment)
+                                #print "%s %s" % (a, isinstance(a,list))
+                                a.insert(i, truth)
+                                #print "success"
+                                a = tuple(a)
+                                s += self.data[a]
+                                del self.data[a]
+                        self.data[assignment] = s
+
+                self.fill((), sumAssign)                        
         def __repr__(self):
                 ret = ""
                 for key in self.data:
@@ -48,5 +70,4 @@ class factor(object):
                 if not factors:
                         return base
                 return base.times(factor.product(factors))
-                
                 
