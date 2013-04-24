@@ -55,11 +55,12 @@ class net(object):
                         # make sure none of the remaining variables have us as a parent
                         def noChildren(var):
                                 for another in _vars:
-                                        if var in self.entries[var].parents:
+                                        if (another is not var) and (var in self.entries[var].parents):
                                                 return False
                                 return True
                                 
                         candidates = filter(noChildren, _vars)
+                        print "filtered down to candidates: %s" % candidates
                         #print "Orphans left: %s" % orphans
                         
                         # then pick the first alphabetically
