@@ -21,10 +21,33 @@ class net(object):
                 return ret
                 
         def factor(self, variable, evidence)
-        '''
-        Make a factor for the variable, given evidence.
-        '''
-        
+                '''
+                Make a factor for the variable, given evidence.
+                '''
+                
+                known = evidence.keys()
+
+                if variable in known:
+                        inputs = []
+                else:
+                        inputs = [variable]
+                for parent in self.entries[variable].parents:
+                        if parent not in known:
+                                inputs.append(parent)
+                ret = factor(inputs)
+                for key in ret.data:
+                        
+                        
+                        asDict = {}
+                        for i in range(len(key)):
+                                asDict[inputs[i]] = key[i]                        
+                        # add our key values to the evidence
+                        full = dict(asDict.items() + evidence.items())
+                        
+                        lookup = self.entries[variable].lookup(full)
+                        ret.data[key] = lookup if (full[variable] == 't') else 1 - lookup # the result of our lookup
+                        # see line 209ish return self.data[key] if (conditions[self.name] == 't') else 1 - self.data[key]
+                return ret
         def __init__(self, file):
                 self.entries = {}
                 entry = None
