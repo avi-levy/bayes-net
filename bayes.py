@@ -4,17 +4,16 @@ from sys import argv
 from net import *
 
 usage = "usage: bayes <bayesnet> <enum|elim> <query>\n<bayesnet> is the name of the file containing the bayes net.\n<enum|elim> specify the algorithm to use.\n<query> is the probability to compute, specified in quotes."
-def end(message=usage):
-  print message
-  exit(0)
 
 if len(argv) != 4:
-  end()
+  exit(usage)
   
 filename, infile, alg, query = argv
 
-if not alg in ["enum", "elim"]:
-        end("Unknown algorithm; please use enum or elim")
+try:
+        algType = ["enum", "elim"].index(alg)
+except ValueError:
+        exit("Unknown algorithm; please use enum or elim")
 try:
         query = query.split('"')
         if len(query) > 1:
@@ -35,14 +34,14 @@ try:
                                 name, value = tuple(term.split("="))
                                 assignments[name] = value
 except Exception:
-        end('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
+        exit('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
         
 #print "You asked me to compute: %s | %s" % (var, assignments)
 
 bn = net(infile)
 
 #print "Start computation."
-result = bn.compute(var,assignments)
+result = bn.compute(var,assignments,algtype)
 print "\nRESULT:"
 for truth in net.truths:#"{0:.16f}".format
         print "P(%s = %s | %s) = %.16f" % (var, truth, assignments, result[truth])

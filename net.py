@@ -38,14 +38,17 @@ class net(object):
         def __repr__(self):
                 return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
                 
-        def compute(self, event, conditions):
+        def compute(self, event, conditions, algtype):
                 q = {}
                 for truth in net.truths:
                         conditions[event] = truth
-                        q[truth] = self.brute(self.entries.keys(), conditions)
+                        if algtype is 0:                        
+                                q[truth] = self.enumerate(self.entries.keys(), conditions)
+                        else:
+                                q[truth] = self.eliminate(self.entries.keys(), conditions)
                 return net.normalized(q)
 
-        def brute(self, _variables, _conditions):
+        def eliminate(self, _variables, _conditions):
                 variables, conditions = list(_variables), dict(_conditions)
                 printsofar = "%s | %s =" % (variables, net.formatmy(conditions))
                 shouldPrint = net.printTrivial
@@ -55,7 +58,7 @@ class net(object):
                         shouldPrint = True                
                         var = self.first(variables) # this means var's parents have been assigned
                         if var in conditions.keys():
-                                ret = self.entries[var].lookup(conditions) * self.brute(variables, conditions)
+                                ret = self.entries[var].lookup(conditions) * self.enumerate(variables, conditions)
                         else:
                                 ret = 0.0
                                 for truth in net.truths:
@@ -64,7 +67,52 @@ class net(object):
                                         #print self.entries
                                         #print var
                                         lookup = self.entries[var].lookup(conditions)
-                                        recurse = self.brute(variables, conditions)
+                                        recurse = self.enumerate(variables, conditions)
+                                        print "var is %s=%s and: + %s * %s" % (var, conditions[var], lookup, recurse)
+                                        #print "Did lookup of %s | %s and got %f" % (var, conditions, lookup)
+                                        ret += ( lookup * recurse )
+                
+                if shouldPrint:
+                        print "%s %s" % (printsofar, ret)
+                return ret
+        def nextForElim(self, variables):# filter out the ancestors first
+                # make sure none of the remaining variables have us as a parent
+                def noChildren(var):
+                        for another in variables:
+                                if var in self.entries[var].parents:
+                                        return False
+                        return True
+                        
+                candidates = filter(noChildren, variables)
+                #print "Orphans left: %s" % orphans
+                
+                # then pick the first alphabetically
+                #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
+                
+                # TODO: filter out the candidates by factor size as well (so only minimal factor sizes remain)
+
+                return variables.pop(variables.index(min(candidates)))                
+                
+        def enumerate(self, _variables, _conditions):
+                variables, conditions = list(_variables), dict(_conditions)
+                printsofar = "%s | %s =" % (variables, net.formatmy(conditions))
+                shouldPrint = net.printTrivial
+                if not variables:
+                        ret = 1.0
+                else:
+                        shouldPrint = True                
+                        var = self.first(variables) # this means var's parents have been assigned
+                        if var in conditions.keys():
+                                ret = self.entries[var].lookup(conditions) * self.enumerate(variables, conditions)
+                        else:
+                                ret = 0.0
+                                for truth in net.truths:
+                                        conditions[var] = truth
+                                        #print "=========="
+                                        #print self.entries
+                                        #print var
+                                        lookup = self.entries[var].lookup(conditions)
+                                        recurse = self.enumerate(variables, conditions)
                                         print "var is %s=%s and: + %s * %s" % (var, conditions[var], lookup, recurse)
                                         #print "Did lookup of %s | %s and got %f" % (var, conditions, lookup)
                                         ret += ( lookup * recurse )
@@ -73,7 +121,7 @@ class net(object):
                         print "%s %s" % (printsofar, ret)
                 return ret
                         
-        def first(self, variables):
+        def first(self, variables):# filter out the ancestors first
                 # filter out variables that have parents also among these variables
                 def isOrphan(var):
                         #print "Getting parents of %s"% var
