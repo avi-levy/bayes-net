@@ -55,7 +55,7 @@ class net(object):
                         # make sure none of the remaining variables have us as a parent
                         def noChildren(var):
                                 for another in _vars:
-                                        if (another is not var) and (var in self.entries[var].parents):
+                                        if (another is not var) and (var in self.entries[another].parents):
                                                 return False
                                 return True
                                 
