@@ -45,4 +45,4 @@ result = bn.compute(var,assignments,algType)
 print "\nRESULT:"
 #for truth in net.truths:#"{0:.16f}".format
 #        print "P(%s = %s | %s) = %.16f" % (var, truth, assignments, result[truth])
-#print result
+print result

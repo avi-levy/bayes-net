@@ -83,14 +83,14 @@ class net(object):
                                 #print "Inputs: %s" % inputs
                                 return len(inputs)
 
-                        minFactor = None
+                        minFactor = -1
                         for c in candidates:
                                 size = factorSize(c)
-                                if not minFactor or minFactor > size:
+                                if minFactor < 0 or minFactor > size:
                                         minFactor = size
-                        #print "Candidates: %s" % candidates
-                        #print "factorsize %s" % map(factorSize, candidates)
-                        #print "minfactor %s" % minFactor
+                        print "Candidates: %s" % candidates
+                        print "factorsize %s" % map(factorSize, candidates)
+                        print "minfactor %s" % minFactor
                         candidates = filter(lambda x: factorSize(x) == minFactor, candidates)
 
                         return _vars.pop(_vars.index(min(candidates)))                   
@@ -138,11 +138,10 @@ class net(object):
                                 conditions[event] = truth
                                 q[truth] = self.enumerate(self.entries.keys(), conditions)
                 else:
-#                        q = self.elim(event, conditions).data
-                        ret = self.elim(event, conditions)
-                        print ret.data
-                        print ret.vars
-                #return net.normalized(q)
+                        q = self.elim(event, conditions).data
+                        #print ret.data
+                        #print ret.vars
+                return net.normalized(q)
 
         def enumerate(self, _variables, _conditions):
                 variables, conditions = list(_variables), dict(_conditions)
