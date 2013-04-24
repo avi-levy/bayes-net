@@ -40,4 +40,13 @@ class factor(object):
                         f.data[assignment] = self.lookup(asDict) * other.lookup(asDict)
                 f.fill((), tAssign)
                 return f
+        @staticmethod
+        def product(factors): # if factors is empty we error
+                base = factors.pop()
+                print base
+                print factors
+                if not factors:
+                        return base
+                return base.times(factor.product(factors))
+                
                 
