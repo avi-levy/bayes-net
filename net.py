@@ -1,3 +1,5 @@
+from factor import *
+
 class net(object):
         printTrivial = False # default value is False - don't print empty products; this matches the spec. For debugging purposes, I like to keep it on True.
         truths = ['f','t'] # default truth sort order
@@ -17,6 +19,12 @@ class net(object):
                 for key in sorted(conditions.keys()):
                         ret += "%s=%s " % (key, conditions[key])
                 return ret
+                
+        def factor(self, variable, evidence)
+        '''
+        Make a factor for the variable, given evidence.
+        '''
+        
         def __init__(self, file):
                 self.entries = {}
                 entry = None
@@ -38,14 +46,30 @@ class net(object):
         def __repr__(self):
                 return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
                 
+
+        def elim(self, query, evidence)
+                factors = []
+                vars = list(self.entries.keys())
+                
+                def next(_vars):
+                
+                
+                while vars:
+                        var = next(vars)
+                        factors.append(net.factor(var, conditions))
+                        if var is not query and var not in conditions.keys():
+                                factors = [f.product(factors).sumOut(var)]
+                        return normalized(f.product(factors))
+                
         def compute(self, event, conditions, algtype):
-                q = {}
-                for truth in net.truths:
-                        conditions[event] = truth
-                        if algtype is 0:                        
-                                q[truth] = self.enumerate(self.entries.keys(), conditions)
-                        else:
-                                q[truth] = self.eliminate(self.entries.keys(), conditions)
+                if algtype is 0:
+                        q = {}
+                        for truth in net.truths:
+                                conditions[event] = truth
+                                                        
+                                        q[truth] = self.enumerate(self.entries.keys(), conditions)
+                else:
+                        q = self.elim(event, conditions)
                 return net.normalized(q)
 
         def eliminate(self, _variables, _conditions):
