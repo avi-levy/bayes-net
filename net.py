@@ -1,9 +1,6 @@
 from factor import *
 
 class net(object):
-        printTrivial = False # default value is False - don't print empty products; this matches the spec. For debugging purposes, I like to keep it on True.
-        truths = ['f','t'] # default truth sort order
-
         @staticmethod
         def normalized(q):# assume q is nonempty
                 sum = 0.0
@@ -20,7 +17,7 @@ class net(object):
                         ret += "%s=%s " % (key, conditions[key])
                 return ret
                 
-        def factor(self, variable, evidence)
+        def factor(self, variable, evidence):
                 '''
                 Make a factor for the variable, given evidence.
                 '''
@@ -70,19 +67,19 @@ class net(object):
                 return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
                 
 
-        def elim(self, query, evidence)
+        def elim(self, query, evidence):
                 factors = []
                 vars = list(self.entries.keys())
                 
                 def next(_vars):
                         # make sure none of the remaining variables have us as a parent
                         def noChildren(var):
-                                for another in variables:
+                                for another in _vars:
                                         if var in self.entries[var].parents:
                                                 return False
                                 return True
                                 
-                        candidates = filter(noChildren, variables)
+                        candidates = filter(noChildren, _vars)
                         #print "Orphans left: %s" % orphans
                         
                         # then pick the first alphabetically
@@ -90,23 +87,30 @@ class net(object):
                         
                         # TODO: filter out the candidates by factor size as well (so only minimal factor sizes remain)
 
-                        return variables.pop(variables.index(min(candidates)))                   
+                        return _vars.pop(_vars.index(min(candidates)))                   
                 
                 
                 while vars:
                         var = next(vars)
-                        factors.append(net.factor(var, conditions))
-                        if var is not query and var not in conditions.keys():
-                                factors = [f.product(factors).sumOut(var)]
-                        return normalized(f.product(factors))
+                        print "Processing %s, remaining: %s" % (var, vars)
+                        factors.append(self.factor(var, evidence))
+                        print "Factors: %s" % factors
+                        if var is not query and var not in evidence.keys():
+                                print "Noticed that %s is hidden, so sum it out" % var
+
+                                current = factor.product(factors)
+                                current.sumOut(var)
+
+                                factors = [current]
+                                print "Factors afer summing: %s" % factors
+                return factor.product(factors)
                 
         def compute(self, event, conditions, algtype):
                 if algtype is 0:
                         q = {}
-                        for truth in net.truths:
+                        for truth in constants.truths:
                                 conditions[event] = truth
-                                                        
-                                        q[truth] = self.enumerate(self.entries.keys(), conditions)
+                                q[truth] = self.enumerate(self.entries.keys(), conditions)
                 else:
                         q = self.elim(event, conditions)
                 return net.normalized(q)
@@ -114,7 +118,7 @@ class net(object):
         def enumerate(self, _variables, _conditions):
                 variables, conditions = list(_variables), dict(_conditions)
                 printsofar = "%s | %s =" % (variables, net.formatmy(conditions))
-                shouldPrint = net.printTrivial
+                shouldPrint = constants.printTrivial
                 if not variables:
                         ret = 1.0
                 else:
@@ -124,7 +128,7 @@ class net(object):
                                 ret = self.entries[var].lookup(conditions) * self.enumerate(variables, conditions)
                         else:
                                 ret = 0.0
-                                for truth in net.truths:
+                                for truth in constants.truths:
                                         conditions[var] = truth
                                         #print "=========="
                                         #print self.entries

@@ -1,5 +1,5 @@
 import random
-from net import *
+from constants import constants
 
 class factor(object):
         def __init__(self, thing):
@@ -21,7 +21,7 @@ class factor(object):
                 if len(assigned) == len(self.vars):
                         operation(assigned) # put computation here
                         return
-                for truth in net.truths:
+                for truth in constants.truths:
                         self.fill(assigned + (truth,), operation)
                         
         def sumOut(self, var): # mutate the data structure
@@ -34,7 +34,7 @@ class factor(object):
                                 
                 def sumAssign(assignment):
                         s = 0.0
-                        for truth in net.truths:
+                        for truth in constants.truths:
                                 a = list(assignment)
                                 #print "%s %s" % (a, isinstance(a,list))
                                 a.insert(i, truth)
