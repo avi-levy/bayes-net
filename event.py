@@ -7,7 +7,7 @@ class event(object):
                         left, right = tuple(line.split("="))
                         self.name = left.strip().strip("P").strip("()")
                         self.parents = []                        
-                        self.data[()] = float(right)
+                        self.data = {(): float(right)}
                         return
                 parents, name = tuple(line.split('|'))
                 self.name = name.strip()

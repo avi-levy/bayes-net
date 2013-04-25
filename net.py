@@ -1,23 +1,38 @@
 from factor import factor
+from event import event
 
 class net(object):
+        '''
+        A Bayes net is a set of nodes and node parent data.
+        The nodes form a polytree.
+        Each node is an event object, see event.py.
+        Basically, we can query each node about its conditional probability table.
+        That's pretty much it!
+        '''
         def __init__(self, file):
-                self.entries = {}
-                entry = None
+                '''
+                Read a file that contains a Bayes net.
+                This is stored as a series of conditional probability tables.
+                Each table specifies an event, its parent events, and probabilities.
+                Each time a new table is encountered, we create a new node.
+                Then, we pass all of the table data into the event node.
+                It handles the rest.
+                '''
+                self.nodes = {}
+                newEntry = True
                 for line in open(file):
                         line = line.strip()
-                        if line:
-                                if entry:
-                                        entry.read(line)
-                                else:
-                                        entry = event(line)
+                        if not line: # an empty line signals the end of an entry
+                                newEntry = True
+                                continue
+                        if newEntry:
+                                entry = event(line) # start a new entry
+                                self.nodes[entry.name] = entry # register the entry
                         else:
-                                self.entries[entry.name] = entry
-                                entry = None
-                if entry:
-                        self.add(entry)                
+                                entry.read(line) # add to the existing entry
+                                
         def __repr__(self):
-                return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
+                return "Net over %s:\n%s" % (self.nodes.keys(), self.nodes)
         @staticmethod
         def normalized(q):# assume q is nonempty
                 sum = 0.0
@@ -41,13 +56,13 @@ class net(object):
                         inputs = []
                 else:
                         inputs = [variable]
-                for parent in self.entries[variable].parents:
+                for parent in self.nodes[variable].parents:
                         if parent not in known:
                                 inputs.append(parent)
 
                 def process(semantic):
                         augmented = dict(semantic.items() + evidence.items())
-                        return self.entries[variable].probability(augmented)
+                        return self.nodes[variable].probability(augmented)
 
                 ret = factor(inputs)                        
                 ret.each(process)
@@ -55,13 +70,13 @@ class net(object):
 
         def elim(self, query, evidence):
                 factors = []
-                vars = list(self.entries.keys())
+                vars = list(self.nodes.keys())
                 known = evidence.keys()
                 
                 def makeFactor(variable, inputs):
                         def process(semantic):
                                 augmented = dict(semantic.items() + evidence.items())
-                                return self.entries[variable].probability(augmented)
+                                return self.nodes[variable].probability(augmented)
 
                         ret = factor(inputs)                        
                         ret.each(process)
@@ -70,7 +85,7 @@ class net(object):
                 def next(variables):
                         def noChildren(var):
                                 for another in variables:
-                                        if (another is not var) and (var in self.entries[another].parents):
+                                        if (another is not var) and (var in self.nodes[another].parents):
                                                 return False
                                 return True
 
@@ -80,7 +95,7 @@ class net(object):
                         # TODO: rename dim to something more descriptive
                         def dim(var):
                                 inputs = [var] if var in known else []
-                                for parent in self.entries[var].parents:
+                                for parent in self.nodes[var].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
                                 return inputs
@@ -119,7 +134,7 @@ class net(object):
                         q = {}
                         for truth in constants.truths:
                                 evidence[event] = truth
-                                q[truth] = self.enum(self.entries.keys(), evidence)
+                                q[truth] = self.enum(self.nodes.keys(), evidence)
                 else:
                         q = self.elim(event, evidence).data
                 return net.normalized(q)
@@ -131,7 +146,7 @@ class net(object):
                 
                 def next(variables):
                         def noParents(var):
-                                for parent in self.entries[var].parents:
+                                for parent in self.nodes[var].parents:
                                         if parent in variables:
                                                 return False
                                 return True
@@ -145,12 +160,12 @@ class net(object):
                         shouldPrint = True                
                         var = next(variables) # this means var's parents have been assigned
                         if var in evidence.keys():
-                                ret = self.entries[var].lookup(evidence) * self.enum(variables, evidence)
+                                ret = self.nodes[var].lookup(evidence) * self.enum(variables, evidence)
                         else:
                                 ret = 0.0
                                 for truth in constants.truths:
                                         evidence[var] = truth
-                                        lookup = self.entries[var].probability(evidence)
+                                        lookup = self.nodes[var].probability(evidence)
                                         recurse = self.enum(variables, evidence)
                                         ret += lookup * recurse
                 
