@@ -50,37 +50,23 @@ class net(object):
         def elim(self, query, evidence):
                 factors = []
                 vars = list(self.entries.keys())
+                known = evidence.keys()
                 
                 def next(_vars):
-                        # make sure none of the remaining variables have us as a parent
                         def noChildren(var):
                                 for another in _vars:
                                         if (another is not var) and (var in self.entries[another].parents):
                                                 return False
                                 return True
-                                
-                        candidates = filter(noChildren, _vars)
-                        print "filtered down to candidates: %s" % candidates
-                        #print "Orphans left: %s" % orphans
-                        
-                        # then pick the first alphabetically
-                        #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
-                        
-                        # TODO: filter out the candidates by factor size as well (so only minimal factor sizes remain)
-                        
-                        def factorSize(var):
-                                #print "Compute factor size for %s" % var
-                                known = evidence.keys()
-                                #print "Known: %s" % known
 
-                                if var in known:
-                                        inputs = []
-                                else:
-                                        inputs = [var]
+                        # make sure none of the remaining variables have us as a parent                                
+                        candidates = filter(noChildren, _vars)
+
+                        def factorSize(var):
+                                inputs = [var] if var in known else []
                                 for parent in self.entries[var].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
-                                #print "Inputs: %s" % inputs
                                 return len(inputs)
 
                         minFactor = -1
@@ -88,27 +74,26 @@ class net(object):
                                 size = factorSize(c)
                                 if minFactor < 0 or minFactor > size:
                                         minFactor = size
-                        print "Candidates: %s" % candidates
-                        print "factorsize %s" % map(factorSize, candidates)
-                        print "minfactor %s" % minFactor
+
                         candidates = filter(lambda x: factorSize(x) == minFactor, candidates)
 
+                        # return the first alphabetical
                         return _vars.pop(_vars.index(min(candidates)))                   
                 
                 
                 while vars:
                         var = next(vars)
-                        print "Processing %s, remaining: %s" % (var, vars)
+                        # print "Processing %s, remaining: %s" % (var, vars)
                         factors.append(self.factor(var, evidence))
-                        print "Factors:\n%s" % "\n".join(map(factor.__repr__,factors))
-                        if var is not query and var not in evidence.keys():
-                                print "Noticed that %s is hidden, so sum it out" % var
+                        # print "Factors:\n%s" % "\n".join(map(factor.__repr__,factors))
+                        if var is not query and var not in known:
+                                # print "Noticed that %s is hidden, so sum it out" % var
 
                                 current = factor.product(factors)
                                 current.sumOut(var)
 
                                 factors = [current]
-                                print "Factors after summing:\n%s" % "\n".join(map(factor.__repr__,factors))
+                                # print "Factors after summing:\n%s" % "\n".join(map(factor.__repr__,factors))
                 return factor.product(factors)                
         def __init__(self, file):
                 self.entries = {}
@@ -189,64 +174,4 @@ class net(object):
 
                 return variables.pop(variables.index(min(orphans)))
                 
-class event(object):
-        def __init__(self, tableHeading):
-                '''
-                tableHeading is the heading of the data table for this event
-                A B | C
-                this means we are event C and we are populating with 4 (A,B) values
-                '''
-                self.parents = []
-                self.name = None
-                self.data = {}                
-                if tableHeading.startswith('P('):# P(A) = val
-                        left, right = tuple(tableHeading.split("="))
-                        self.name = left.strip().strip("P").strip("()")
-#                        self.name = left.split("(")[1].split(")")[0]
-                        self.data = float(right)
-                        #print "Created event named %s with data %f and no parents" % (self.name, self.data)
-                        return
-                parents, name = tuple(tableHeading.split('|')) # there can be a parse error here
-                self.parents = parents.split()# important: order is preserved
-                self.name = name.strip()
-                #print "Create event named %s and parents %s" % (self.name, self.parents)
-        def setProbabilities(self, row):
-                '''
-                ignore row if startswith -
-                row is a string. we want to convert it to a dictionary of eventnames to truth values:
-                {'A' : True, 'B' : False, ... } and then a value
-                
-                TODO: add consistency checks against the parents we intialized with
-                '''
-                if row.startswith('-'):
-                        return
-                #print "called with %s" % row
-                bools, value = tuple(row.split("|"))
-                #print "split %s" % bools.split()
-                #print "len %d" % len(tuple(bools.split()))
-                self.data[tuple(bools.split())] = float(value)
-                #print "Data for event %s is now %s" % (self.name, self.data)
-        def __repr__(self):
-                return "\nEvent %s | %s:\n%s" % (self.name, self.parents, self.data)
-        
-        def lookup(self, conditions):# assume that our event is already set in the conditions
-                if isinstance(self.data, float):
-                        if self.name in conditions.keys():
-                                return self.data if (conditions[self.name] == 't') else 1 - self.data
-                if isinstance(self.data, dict):
-                        # iterate through our data entries, until one of them matches the condition
-                        # we assume that the conditions permit exactly one valid entry
-                        try:
-                                for key in self.data:
-                                        if self.satisfiesConditions(key, conditions):
-                                                return self.data[key] if (conditions[self.name] == 't') else 1 - self.data[key]
-                        except Exception:
-                                exit("Oh no; the conditions weren't specific enough!")
-                exit("Bad bad bad. Make sure the conditions you passed gave us enough info to resolve the probability of this event occurring.")
-        def satisfiesConditions(self, key, conditions):
-                #print "Checking key %s if satisfies %s" % (key, conditions)
-                for i, truth in enumerate(key):
-                        if conditions[self.parents[i]] != truth:
-                                return False
-                return True
-        
+
