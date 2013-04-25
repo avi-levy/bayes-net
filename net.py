@@ -1,6 +1,23 @@
 from factor import factor
 
 class net(object):
+        def __init__(self, file):
+                self.entries = {}
+                entry = None
+                for line in open(file):
+                        line = line.strip()
+                        if line:
+                                if entry:
+                                        entry.read(line)
+                                else:
+                                        entry = event(line)
+                        else:
+                                self.entries[entry.name] = entry
+                                entry = None
+                if entry:
+                        self.add(entry)                
+        def __repr__(self):
+                return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
         @staticmethod
         def normalized(q):# assume q is nonempty
                 sum = 0.0
@@ -27,89 +44,74 @@ class net(object):
                 for parent in self.entries[variable].parents:
                         if parent not in known:
                                 inputs.append(parent)
-                ret = factor(inputs)
-                for semantic in ret.data:
-                        asDict = {}
-                        for i in range(len(key)):
-                                asDict[inputs[i]] = semantic[i]                        
-                        # add our key values to the evidence
 
-                        full = dict(asDict.items() + evidence.items())
+                def process(semantic):
+                        augmented = dict(semantic.items() + evidence.items())
+                        return self.entries[variable].probability(augmented)
 
-                        probability = self.entries[variable].probability(full)
-                        print "Reading key: %s full: %s, so full[%s] = %s, raw lookup = %s" % (asDict, full, variable, full[variable], lookup)
-                        ret.data[semantic] = probability
+                ret = factor(inputs)                        
+                ret.each(process)
                 return ret
 
-        def __init__(self, file):
-                self.entries = {}
-                entry = None
-                for line in open(file):
-                        line = line.strip()
-                        if line:
-                                if entry:
-                                        entry.read(line)
-                                else:
-                                        entry = event(line)
-                        else:
-                                self.entries[entry.name] = entry
-                                entry = None
-                if entry:
-                        self.add(entry)                
-
-        def __repr__(self):
-                return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
-                
         def elim(self, query, evidence):
                 factors = []
                 vars = list(self.entries.keys())
                 known = evidence.keys()
                 
-                def next(_vars):
+                def makeFactor(variable, inputs):
+                        def process(semantic):
+                                augmented = dict(semantic.items() + evidence.items())
+                                return self.entries[variable].probability(augmented)
+
+                        ret = factor(inputs)                        
+                        ret.each(process)
+                        return ret
+                                
+                def next(variables):
                         def noChildren(var):
-                                for another in _vars:
+                                for another in variables:
                                         if (another is not var) and (var in self.entries[another].parents):
                                                 return False
                                 return True
 
                         # make sure none of the remaining variables have us as a parent                                
-                        childless = filter(noChildren, _vars)
+                        childless = filter(noChildren, variables)
 
+                        # TODO: rename dim to something more descriptive
                         def dim(var):
                                 inputs = [var] if var in known else []
                                 for parent in self.entries[var].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
-                                return len(inputs)
+                                return inputs
 
                         # maintain a set of childless vars with minimal factor dimension
+                        small = {}
                         for var in childless:
                                 if not small:
-                                        small = [var]
-                                        smallest = dim(var)                                        
+                                        inputs = dim(var)
+                                        small = {var: inputs}
+                                        smallest = len(inputs)
                                 else:
-                                        size = dim(var)
+                                        inputs = dim(var)
+                                        size = len(inputs)
                                         if size == smallest:
-                                                small.append(var)
+                                                small[var] = inputs
                                         if size < smallest:
-                                                small = [var]
+                                                small = {var: inputs}
                                                 smallest = size
 
-                        # return the first alphabetical
-                        return _vars.pop(_vars.index(min(smallest)))                   
+                        # return the alphabetically first small variable
+                        variable = min(small, key = small.get)
+                        variables.remove(variable)
+                        inputs = small[variable]
+                        return variable, makeFactor(var, inputs)
+                        
                 while vars:
-                        var = next(vars)
-                        # print "Processing %s, remaining: %s" % (var, vars)
-                        factors.append(self.factor(var, evidence))
-                        # print "Factors:\n%s" % "\n".join(map(factor.__repr__,factors))
+                        var, _factor = next(vars)
+                        factors.append(_factor)
                         if var is not query and var not in known:
-                                # print "Noticed that %s is hidden, so sum it out" % var
-
-                                current = factor.product(factors)
-                                current.sumOut(var)
-
-                                factors = [current]
-                                # print "Factors after summing:\n%s" % "\n".join(map(factor.__repr__,factors))
+                                factors = [factor.product(factors).sumOut(var)]
                 return factor.product(factors)
                 
         def probability(self, event, evidence, algtype):

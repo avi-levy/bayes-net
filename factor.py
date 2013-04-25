@@ -18,6 +18,8 @@ class factor(object):
                         ret += ": %f\n" % value
                 return ret                
 
+        # Access operations #
+        
         def each(self, operation):
                 ''' Applies operation to each semantic, as a dictionary of event-truth pairs, and updates the data structure with the return value '''
                 semantic = {}
@@ -40,7 +42,7 @@ class factor(object):
                         tup += (semantic[var],)
                 return self.probabilities[tup]
         
-        # Algebraic operations on factors #
+        # Algebraic operations #
                 
         @staticmethod
         def extend(old, i, value):
@@ -62,7 +64,8 @@ class factor(object):
                         del self.probabilities[a]
                         return ret
 
-                self.fill((), lambda k: sum(map(partial(update, k), constants.truths)))                        
+                self.fill((), lambda k: sum(map(partial(update, k), constants.truths)))
+                return self
                 
         def times(self, other):
                 f = factor(set(self.vars) | set(other.vars))
