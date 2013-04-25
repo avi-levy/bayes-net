@@ -12,7 +12,7 @@ class event(object):
                 parents, name = tuple(line.split('|'))
                 self.name = name.strip()
                 self.parents = parents.split()                
-                self.data = {}               
+                self.data = {}
         def __repr__(self):
                 return "\nEvent %s | %s:\n%s" % (self.name, self.parents, self.data)                
 

@@ -28,6 +28,7 @@ class net(object):
                         if newEntry:
                                 entry = event(line) # start a new entry
                                 self.nodes[entry.name] = entry # register the entry
+                                newEntry = False # reset flag
                         else:
                                 entry.read(line) # add to the existing entry
                                 
@@ -80,6 +81,9 @@ class net(object):
 
                         ret = factor(inputs)                        
                         ret.each(process)
+                        print variable
+                        print inputs
+                        print ret
                         return ret
                                 
                 def next(variables):
@@ -89,12 +93,15 @@ class net(object):
                                                 return False
                                 return True
 
+                        print "All variables: %s" % variables
                         # make sure none of the remaining variables have us as a parent                                
                         childless = filter(noChildren, variables)
+                        
+                        print "childless: %s" % childless
 
                         # TODO: rename dim to something more descriptive
                         def dim(var):
-                                inputs = [var] if var in known else []
+                                inputs = [] if var in known else [var]
                                 for parent in self.nodes[var].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
@@ -116,6 +123,7 @@ class net(object):
                                                 small = {var: inputs}
                                                 smallest = size
 
+                        print "small: %s" % small
                         # return the alphabetically first small variable
                         variable = min(small, key = small.get)
                         variables.remove(variable)

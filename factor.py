@@ -11,12 +11,13 @@ class factor(object):
                 self.probabilities = {} # maps tuples of {T,F}^|vars| -> values
                 return
         def __repr__(self):
-                ret = ""
-                for key, value in self.probabilities.items():
-                        for i in range(len(self.vars)):
-                                ret += "%s=%s, " % (self.vars[i], key[i])
-                        ret += ": %f\n" % value
-                return ret                
+#                ret = ""
+#                for key, value in self.probabilities.items():
+#                        for i in range(len(self.vars)):
+#                                ret += "%s=%s, " % (self.vars[i], key[i])
+#                        ret += ": %f\n" % value
+#                return ret
+                return self.probabilities.__repr__()
 
         # Access operations #
         
@@ -31,7 +32,7 @@ class factor(object):
                 
         def fill(self, assigned, operation):
                 if len(assigned) == len(self.vars):
-                        self.probabilities[semantic] = operation(assigned)
+                        self.probabilities[assigned] = operation(assigned)
                         return
                 for truth in constants.truths:
                         self.fill(assigned + (truth,), operation)
