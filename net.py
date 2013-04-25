@@ -71,7 +71,7 @@ class net(object):
 
         def elim(self, query, evidence):
                 factors = []
-                vars = list(self.nodes.keys())
+                variables = list(self.nodes.keys())
                 known = evidence.keys()
                 
                 def makeFactor(variable, inputs):
@@ -80,14 +80,13 @@ class net(object):
                                 return self.nodes[variable].probability(augmented)
 
                         ret = factor(inputs)
-                        print "variable %s, inputs %s" % (variable, inputs)
                         ret.each(process)
                         return ret
                                 
                 def next(variables):
-                        def noChildren(var):
+                        def noChildren(variable):
                                 for another in variables:
-                                        if (another is not var) and (var in self.nodes[another].parents):
+                                        if (another is not variable) and (variable in self.nodes[another].parents):
                                                 return False
                                 return True
 
@@ -95,41 +94,41 @@ class net(object):
                         childless = filter(noChildren, variables)
                         
                         # TODO: rename dim to something more descriptive
-                        def dim(var):
-                                inputs = [] if var in known else [var]
-                                for parent in self.nodes[var].parents:
+                        def dim(variable):
+                                inputs = [] if variable in known else [variable]
+                                for parent in self.nodes[variable].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
                                 return inputs
 
                         # maintain a set of childless vars with minimal factor dimension
                         small = {}
-                        for var in childless:
+                        for variable in childless:
                                 if not small:
-                                        inputs = dim(var)
-                                        small = {var: inputs}
+                                        inputs = dim(variable)
+                                        small = {variable: inputs}
                                         smallest = len(inputs)
                                 else:
-                                        inputs = dim(var)
+                                        inputs = dim(variable)
                                         size = len(inputs)
                                         if size == smallest:
-                                                small[var] = inputs
+                                                small[variable] = inputs
                                         if size < smallest:
-                                                small = {var: inputs}
+                                                small = {variable: inputs}
                                                 smallest = size
 
                         # return the alphabetically first small variable
                         variable = min(small, key = small.get)
                         variables.remove(variable)
                         inputs = small[variable]
-                        return variable, makeFactor(var, inputs)
+                        return variable, makeFactor(variable, inputs) # and here was the most recent bug: used var instead of variable...
                         
-                while vars:
-                        var, _factor = next(vars)
+                while variables:
+                        variable, _factor = next(variables)
                         factors.append(_factor)
-                        if var is not query and var not in known:
-                                factors = [factor.product(factors).sumOut(var)]
-                return factor.product(factors)
+                        if variable is not query and variable not in known:
+                                factors = [factor.product(factors).sumOut(variable)]
+                return factor.product(factors).probabilities
                 
         def probability(self, event, evidence, algtype):
                 if algtype is 0:
@@ -138,7 +137,7 @@ class net(object):
                                 evidence[event] = truth
                                 q[truth] = self.enum(self.nodes.keys(), evidence)
                 else:
-                        q = self.elim(event, evidence).data
+                        q = self.elim(event, evidence)
                 return net.normalized(q)
 
         def enum(self, _variables, _evidence):
