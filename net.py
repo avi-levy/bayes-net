@@ -76,13 +76,11 @@ class net(object):
                 
                 def makeFactor(variable, inputs):
                         def process(semantic):
-                                print "processing: %s" % semantic
                                 augmented = dict(semantic.items() + evidence.items())
-                                print "var: %s, inputs: %s, aug: %s" % (variable, inputs, augmented)
                                 return self.nodes[variable].probability(augmented)
 
                         ret = factor(inputs)
-                        print "building factor with %s" % ret.vars
+                        print "variable %s, inputs %s" % (variable, inputs)
                         ret.each(process)
                         return ret
                                 
@@ -93,12 +91,9 @@ class net(object):
                                                 return False
                                 return True
 
-                        print "All variables: %s" % variables
                         # make sure none of the remaining variables have us as a parent                                
                         childless = filter(noChildren, variables)
                         
-                        print "childless: %s" % childless
-
                         # TODO: rename dim to something more descriptive
                         def dim(var):
                                 inputs = [] if var in known else [var]
@@ -123,7 +118,6 @@ class net(object):
                                                 small = {var: inputs}
                                                 smallest = size
 
-                        print "small: %s" % small
                         # return the alphabetically first small variable
                         variable = min(small, key = small.get)
                         variables.remove(variable)
@@ -168,14 +162,14 @@ class net(object):
                         shouldPrint = True                
                         var = next(variables) # this means var's parents have been assigned
                         if var in evidence.keys():
-                                ret = self.nodes[var].lookup(evidence) * self.enum(variables, evidence)
+                                ret = self.nodes[var].probability(evidence) * self.enum(variables, evidence)
                         else:
                                 ret = 0.0
                                 for truth in constants.truths:
                                         evidence[var] = truth
-                                        lookup = self.nodes[var].probability(evidence)
+                                        probability = self.nodes[var].probability(evidence)
                                         recurse = self.enum(variables, evidence)
-                                        ret += lookup * recurse
+                                        ret += probability * recurse
                 
                 if shouldPrint:
                         print "%s %s" % (printsofar, ret)

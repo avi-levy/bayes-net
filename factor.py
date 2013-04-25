@@ -25,24 +25,19 @@ class factor(object):
                 ''' Applies operation to each semantic, as a dictionary of event-truth pairs, and updates the data structure with the return value '''
                 semantic = {}
                 def assign(tup):
-                        print len(tup)
-                        print tup[0]
-                        print self.vars
                         for i in range(len(tup)):
                                 semantic[self.vars[i]] = tup[i]
-                                print semantic
-                                return operation(semantic) # oh my...
+                        return operation(semantic)
                 self.fill((), assign)
                 
         def fill(self, assigned, operation):
                 if len(assigned) == len(self.vars):
-                        print "filling with %s %s len was %d" % (assigned, self.vars, len(assigned))
-                        self.probabilities[assigned] = operation((assigned))
+                        self.probabilities[assigned] = operation(assigned)
                         return
                 for truth in constants.truths:
                         self.fill(assigned + (truth,), operation)
 
-        def lookup(self, semantic):
+        def probability(self, semantic):
                 tup = ()
                 for var in self.vars:
                         tup += (semantic[var],)
@@ -75,7 +70,7 @@ class factor(object):
                 
         def times(self, other):
                 f = factor(set(self.vars) | set(other.vars))
-                f.each(lambda semantic: self.truth(semantic) * other.truth(semantic))
+                f.each(lambda semantic: self.probability(semantic) * other.probability(semantic))
                 return f
                 
         @staticmethod
