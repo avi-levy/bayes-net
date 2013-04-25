@@ -1,4 +1,4 @@
-from factor import *
+from factor import factor
 
 class net(object):
         @staticmethod
@@ -11,19 +11,15 @@ class net(object):
                 return q
 
         @staticmethod
-        def formatmy(conditions):
+        def formatmy(evidence):
                 ret = ""
-                for key in sorted(conditions.keys()):
-                        ret += "%s=%s " % (key, conditions[key])
+                for key in sorted(evidence.keys()):
+                        ret += "%s=%s " % (key, evidence[key])
                 return ret
                 
         def factor(self, variable, evidence):
-                '''
-                Make a factor for the variable, given evidence.
-                '''
-                print "Making factor from %s, evidence is %s" % (variable, evidence)
+                ''' Construct a factor '''
                 known = evidence.keys()
-
                 if variable in known:
                         inputs = []
                 else:
@@ -32,21 +28,38 @@ class net(object):
                         if parent not in known:
                                 inputs.append(parent)
                 ret = factor(inputs)
-                for key in ret.data:
-                        
-                        
+                for semantic in ret.data:
                         asDict = {}
                         for i in range(len(key)):
-                                asDict[inputs[i]] = key[i]                        
+                                asDict[inputs[i]] = semantic[i]                        
                         # add our key values to the evidence
 
                         full = dict(asDict.items() + evidence.items())
 
-                        lookup = self.entries[variable].lookup(full)
+                        probability = self.entries[variable].probability(full)
                         print "Reading key: %s full: %s, so full[%s] = %s, raw lookup = %s" % (asDict, full, variable, full[variable], lookup)
-                        ret.data[key] = lookup # if (full[variable] == 't') else 1 - lookup # the result of our lookup
-                        # see line 209ish return self.data[key] if (conditions[self.name] == 't') else 1 - self.data[key]
+                        ret.data[semantic] = probability
                 return ret
+
+        def __init__(self, file):
+                self.entries = {}
+                entry = None
+                for line in open(file):
+                        line = line.strip()
+                        if line:
+                                if entry:
+                                        entry.read(line)
+                                else:
+                                        entry = event(line)
+                        else:
+                                self.entries[entry.name] = entry
+                                entry = None
+                if entry:
+                        self.add(entry)                
+
+        def __repr__(self):
+                return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
+                
         def elim(self, query, evidence):
                 factors = []
                 vars = list(self.entries.keys())
@@ -60,27 +73,30 @@ class net(object):
                                 return True
 
                         # make sure none of the remaining variables have us as a parent                                
-                        candidates = filter(noChildren, _vars)
+                        childless = filter(noChildren, _vars)
 
-                        def factorSize(var):
+                        def dim(var):
                                 inputs = [var] if var in known else []
                                 for parent in self.entries[var].parents:
                                         if parent not in known:
                                                 inputs.append(parent)
                                 return len(inputs)
 
-                        minFactor = -1
-                        for c in candidates:
-                                size = factorSize(c)
-                                if minFactor < 0 or minFactor > size:
-                                        minFactor = size
-
-                        candidates = filter(lambda x: factorSize(x) == minFactor, candidates)
+                        # maintain a set of childless vars with minimal factor dimension
+                        for var in childless:
+                                if not small:
+                                        small = [var]
+                                        smallest = dim(var)                                        
+                                else:
+                                        size = dim(var)
+                                        if size == smallest:
+                                                small.append(var)
+                                        if size < smallest:
+                                                small = [var]
+                                                smallest = size
 
                         # return the first alphabetical
-                        return _vars.pop(_vars.index(min(candidates)))                   
-                
-                
+                        return _vars.pop(_vars.index(min(smallest)))                   
                 while vars:
                         var = next(vars)
                         # print "Processing %s, remaining: %s" % (var, vars)
@@ -94,84 +110,48 @@ class net(object):
 
                                 factors = [current]
                                 # print "Factors after summing:\n%s" % "\n".join(map(factor.__repr__,factors))
-                return factor.product(factors)                
-        def __init__(self, file):
-                self.entries = {}
-                entry = None
-                for line in open(file):
-                        line = line.strip()
-                        if line:
-                                if entry:
-                                        entry.setProbabilities(line)
-                                else:
-                                        entry = event(line)
-                        else:
-                                self.add(entry)
-                                entry = None
-                if entry:
-                        self.add(entry)                
-
-        def add(self, entry):
-                self.entries[entry.name] = entry
-        def __repr__(self):
-                return "Net over %s:\n%s" % (self.entries.keys(), self.entries)
+                return factor.product(factors)
                 
-        def compute(self, event, conditions, algtype):
+        def probability(self, event, evidence, algtype):
                 if algtype is 0:
                         q = {}
                         for truth in constants.truths:
-                                conditions[event] = truth
-                                q[truth] = self.enumerate(self.entries.keys(), conditions)
+                                evidence[event] = truth
+                                q[truth] = self.enum(self.entries.keys(), evidence)
                 else:
-                        q = self.elim(event, conditions).data
-                        #print ret.data
-                        #print ret.vars
+                        q = self.elim(event, evidence).data
                 return net.normalized(q)
 
-        def enumerate(self, _variables, _conditions):
-                variables, conditions = list(_variables), dict(_conditions)
-                printsofar = "%s | %s =" % (variables, net.formatmy(conditions))
+        def enum(self, _variables, _evidence):
+                variables, evidence = list(_variables), dict(_evidence)
+                printsofar = "%s | %s =" % (variables, net.formatmy(evidence))
                 shouldPrint = constants.printTrivial
+                
+                def next(variables):
+                        def noParents(var):
+                                for parent in self.entries[var].parents:
+                                        if parent in variables:
+                                                return False
+                                return True
+                                
+                        orphans = filter(noParents, variables)
+                        return variables.pop(variables.index(min(orphans)))                
+
                 if not variables:
                         ret = 1.0
                 else:
                         shouldPrint = True                
-                        var = self.first(variables) # this means var's parents have been assigned
-                        if var in conditions.keys():
-                                ret = self.entries[var].lookup(conditions) * self.enumerate(variables, conditions)
+                        var = next(variables) # this means var's parents have been assigned
+                        if var in evidence.keys():
+                                ret = self.entries[var].lookup(evidence) * self.enum(variables, evidence)
                         else:
                                 ret = 0.0
                                 for truth in constants.truths:
-                                        conditions[var] = truth
-                                        #print "=========="
-                                        #print self.entries
-                                        #print var
-                                        lookup = self.entries[var].lookup(conditions)
-                                        recurse = self.enumerate(variables, conditions)
-                                        print "var is %s=%s and: + %s * %s" % (var, conditions[var], lookup, recurse)
-                                        #print "Did lookup of %s | %s and got %f" % (var, conditions, lookup)
-                                        ret += ( lookup * recurse )
+                                        evidence[var] = truth
+                                        lookup = self.entries[var].probability(evidence)
+                                        recurse = self.enum(variables, evidence)
+                                        ret += lookup * recurse
                 
                 if shouldPrint:
                         print "%s %s" % (printsofar, ret)
                 return ret
-                        
-        def first(self, variables):# filter out the ancestors first
-                # filter out variables that have parents also among these variables
-                def isOrphan(var):
-                        #print "Getting parents of %s"% var
-                        for parent in self.entries[var].parents:
-                                #print parent
-                                if parent in variables:
-                                        return False
-                        return True
-                        
-                orphans = filter(isOrphan, variables)
-                #print "Orphans left: %s" % orphans
-                
-                # then pick the first alphabetically
-                #print "Best orphan: %s at %d" % (min(orphans),variables.index(min(orphans)))
-
-                return variables.pop(variables.index(min(orphans)))
-                
-
