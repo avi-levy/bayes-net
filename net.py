@@ -146,8 +146,8 @@ class net(object):
                 printsofar = "%s | %s =" % (variables, net.formatmy(evidence))
                 
                 def next(variables):
-                        def noParents(var):
-                                for parent in self.nodes[var].parents:
+                        def noParents(variable):
+                                for parent in self.nodes[variable].parents:
                                         if parent in variables:
                                                 return False
                                 return True
@@ -155,19 +155,28 @@ class net(object):
                         orphans = filter(noParents, variables)
                         return variables.pop(variables.index(min(orphans)))                
 
-                shouldPrint = True                
-                var = next(variables) # this means var's parents have been assigned
-                if var in evidence.keys():
+               
+                def product():
                         ret = self.nodes[var].probability(evidence)
                         if variables:
-                                ret *= self.enum(variables, evidence)
+                               ret *= self.enum(variables, evidence)
+                        return ret
+                        
+                def sumOut(truth):
+                        evidence[variable] = truth
+                        return product()
+                        
+                variable = next(variables) # this means var's parents have been assigned
+                if variable in evidence.keys():
+                        ret = product()
                 else:
-                        ret = 0.0
-                        for truth in constants.truths:
-                                evidence[var] = truth
-                                cur = self.nodes[var].probability(evidence)
-                                if variables:
-                                        cur *= self.enum(variables, evidence)
-                                ret += cur
+#                        ret = 0.0
+                        ret = sum(map(sumOut,constants.truths))
+#                        for truth in constants.truths:
+#                                evidence[var] = truth
+#                                cur = self.nodes[var].probability(evidence)
+#                                if variables:
+#                                        cur *= self.enum(variables, evidence)
+#                                ret += cur
                 print "%s %s" % (printsofar, ret)
                 return ret
