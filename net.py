@@ -1,4 +1,5 @@
 from factor import factor
+from constants import constants
 from event import event
 
 class net(object):
@@ -143,7 +144,6 @@ class net(object):
         def enum(self, _variables, _evidence):
                 variables, evidence = list(_variables), dict(_evidence)
                 printsofar = "%s | %s =" % (variables, net.formatmy(evidence))
-                shouldPrint = constants.printTrivial
                 
                 def next(variables):
                         def noParents(var):
@@ -155,21 +155,19 @@ class net(object):
                         orphans = filter(noParents, variables)
                         return variables.pop(variables.index(min(orphans)))                
 
-                if not variables:
-                        ret = 1.0
+                shouldPrint = True                
+                var = next(variables) # this means var's parents have been assigned
+                if var in evidence.keys():
+                        ret = self.nodes[var].probability(evidence)
+                        if variables:
+                                ret *= self.enum(variables, evidence)
                 else:
-                        shouldPrint = True                
-                        var = next(variables) # this means var's parents have been assigned
-                        if var in evidence.keys():
-                                ret = self.nodes[var].probability(evidence) * self.enum(variables, evidence)
-                        else:
-                                ret = 0.0
-                                for truth in constants.truths:
-                                        evidence[var] = truth
-                                        probability = self.nodes[var].probability(evidence)
-                                        recurse = self.enum(variables, evidence)
-                                        ret += probability * recurse
-                
-                if shouldPrint:
-                        print "%s %s" % (printsofar, ret)
+                        ret = 0.0
+                        for truth in constants.truths:
+                                evidence[var] = truth
+                                cur = self.nodes[var].probability(evidence)
+                                if variables:
+                                        cur *= self.enum(variables, evidence)
+                                ret += cur
+                print "%s %s" % (printsofar, ret)
                 return ret
