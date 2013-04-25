@@ -76,14 +76,14 @@ class net(object):
                 
                 def makeFactor(variable, inputs):
                         def process(semantic):
+                                print "processing: %s" % semantic
                                 augmented = dict(semantic.items() + evidence.items())
+                                print "var: %s, inputs: %s, aug: %s" % (variable, inputs, augmented)
                                 return self.nodes[variable].probability(augmented)
 
-                        ret = factor(inputs)                        
+                        ret = factor(inputs)
+                        print "building factor with %s" % ret.vars
                         ret.each(process)
-                        print variable
-                        print inputs
-                        print ret
                         return ret
                                 
                 def next(variables):

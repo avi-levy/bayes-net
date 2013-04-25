@@ -26,7 +26,7 @@ class event(object):
         
         def probability(self, evidence):
                 ''' Return the probability that the evidence is satisfed. '''
-                
+                print "looking up probability for %s" % evidence
                 def satisfies(semantic):
                         for i, truth in enumerate(semantic):
                                 if evidence[self.parents[i]] != truth:
