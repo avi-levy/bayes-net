@@ -1,78 +1,81 @@
-import random
 from constants import constants
+from functools import partial
 
 class factor(object):
         def __init__(self, thing):
                 if isinstance(thing, factor): # copy constructor
                         self.vars = list(thing.vars)
-                        self.data = dict(thing.data)
+                        self.probabilities = dict(thing.probabilities)
                         return
                 self.vars = list(thing) # coerce to list
-                self.data = {} # maps tuples of {T,F}^|vars| -> values
-                self.fill((),self.assign)
-                random.seed()
+                self.probabilities = {} # maps tuples of {T,F}^|vars| -> values
                 return
+        def __repr__(self):
+#                ret = ""
+#                for key, value in self.probabilities.items():
+#                        for i in range(len(self.vars)):
+#                                ret += "%s=%s, " % (self.vars[i], key[i])
+#                        ret += ": %f\n" % value
+#                return ret
+                return self.probabilities.__repr__()
 
+        # Access operations #
+        
+        def each(self, operation):
+                ''' Applies operation to each semantic, as a dictionary of event-truth pairs, and updates the data structure with the return value '''
+                semantic = {}
+                def assign(tup):
+                        for i in range(len(tup)):
+                                semantic[self.vars[i]] = tup[i]
+                        return operation(semantic)
+                self.fill((), assign)
                 
-        def assign(self, assignment):
-                self.data[assignment] = random.random()
-
         def fill(self, assigned, operation):
                 if len(assigned) == len(self.vars):
-                        operation(assigned) # put computation here
+                        self.probabilities[assigned] = operation(assigned)
                         return
                 for truth in constants.truths:
                         self.fill(assigned + (truth,), operation)
-                        
-        def sumOut(self, var): # mutate the data structure
+
+        def probability(self, semantic):
+                tup = ()
+                for var in self.vars:
+                        tup += (semantic[var],)
+                return self.probabilities[tup]
+        
+        # Algebraic operations #
+                
+        @staticmethod
+        def extend(old, i, value):
+                ''' extend a tuple '''
+                new = list(old)
+                new.insert(i, value)
+                return tuple(new)
+                
+        def sumOut(self, var):
+                ''' sum out var from the list of vars '''
                 if not var in self.vars:
                         return
-                # fullData = dict(self.data)
-
                 i = self.vars.index(var)
                 self.vars.pop(i)
                                 
-                def sumAssign(assignment):
-                        s = 0.0
-                        for truth in constants.truths:
-                                a = list(assignment)
-                                #print "%s %s" % (a, isinstance(a,list))
-                                a.insert(i, truth)
-                                #print "success"
-                                a = tuple(a)
-                                s += self.data[a]
-                                del self.data[a]
-                        self.data[assignment] = s
+                def update(semantic, truth):
+                        a = factor.extend(semantic, i, truth)
+                        ret = self.probabilities[a]
+                        del self.probabilities[a]
+                        return ret
 
-                self.fill((), sumAssign)                        
-        def __repr__(self):
-                ret = ""
-                for key in self.data:
-                        for i in range(len(self.vars)):
-                                ret += "%s=%s, " % (self.vars[i], key[i])
-                        ret += ": %f\n" % self.data[key]
-                return ret
-                
-        def lookup(self, entry): # entry is a dict A=t B=f C=t, we map to tuple basically
-                tup = ()
-                for var in self.vars:
-                        tup += (entry[var],)
-                return self.data[tup]
+                self.fill((), lambda k: sum(map(partial(update, k), constants.truths)))
+                return self
                 
         def times(self, other):
                 f = factor(set(self.vars) | set(other.vars))
-                def tAssign(assignment):
-                        asDict = {}
-                        for i in range(len(assignment)):
-                                asDict[f.vars[i]] = assignment[i]
-                        f.data[assignment] = self.lookup(asDict) * other.lookup(asDict)
-                f.fill((), tAssign)
+                f.each(lambda semantic: self.probability(semantic) * other.probability(semantic))
                 return f
+                
         @staticmethod
-        def product(factors): # if factors is empty we error
+        def product(factors):
                 base = factors.pop()
-                #print base
-                #print factors
                 if not factors:
                         return base
                 return base.times(factor.product(factors))
