@@ -1,6 +1,7 @@
 from factor import factor
 from constants import constants
 from event import event
+import output
 
 class net(object):
         '''
@@ -44,13 +45,6 @@ class net(object):
                         q[k] /= sum
                 return q
 
-        @staticmethod
-        def formatmy(evidence):
-                ret = ""
-                for key in sorted(evidence.keys()):
-                        ret += "%s=%s " % (key, evidence[key])
-                return ret
-                
         def factor(self, variable, evidence):
                 ''' Construct a factor '''
                 known = evidence.keys()
@@ -122,7 +116,7 @@ class net(object):
                         variable = min(small, key = small.get)
                         variables.remove(variable)
                         inputs = small[variable]
-                        return variable, makeFactor(variable, inputs) # and here was the most recent bug: used var instead of variable...
+                        return variable, makeFactor(variable, inputs)
                         
                 while variables:
                         variable, _factor = next(variables)
@@ -136,15 +130,14 @@ class net(object):
                         q = {}
                         for truth in constants.truths:
                                 evidence[event] = truth
-                                q[truth] = self.enum(self.nodes.keys(), evidence)
+                                q[truth] = self.enum(self.nodes.keys(), evidence)[0]
                 else:
                         q = self.elim(event, evidence)
                 return net.normalized(q)
 
         def enum(self, _variables, _evidence):
                 variables, evidence = list(_variables), dict(_evidence)
-                printsofar = "%s | %s =" % (variables, net.formatmy(evidence))
-                
+
                 def next(variables):
                         def noParents(variable):
                                 for parent in self.nodes[variable].parents:
@@ -155,28 +148,24 @@ class net(object):
                         orphans = filter(noParents, variables)
                         return variables.pop(variables.index(min(orphans)))                
 
-               
                 def product():
-                        ret = self.nodes[var].probability(evidence)
+                        ret = self.nodes[variable].probability(evidence)
+                        self.trace = variable
                         if variables:
-                               ret *= self.enum(variables, evidence)
+                               multiplier, trace = self.enum(variables, evidence)
+                               self.trace = variable + " " + trace
+                               ret *= multiplier
                         return ret
                         
                 def sumOut(truth):
                         evidence[variable] = truth
                         return product()
                         
-                variable = next(variables) # this means var's parents have been assigned
+                variable = next(variables)
                 if variable in evidence.keys():
                         ret = product()
                 else:
-#                        ret = 0.0
                         ret = sum(map(sumOut,constants.truths))
-#                        for truth in constants.truths:
-#                                evidence[var] = truth
-#                                cur = self.nodes[var].probability(evidence)
-#                                if variables:
-#                                        cur *= self.enum(variables, evidence)
-#                                ret += cur
-                print "%s %s" % (printsofar, ret)
-                return ret
+                
+                output.enum(evidence, self.trace, ret)        
+                return (ret, self.trace)
