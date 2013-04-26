@@ -8,14 +8,14 @@ class factor(object):
                         self.vars = list(thing.vars)
                         self.probabilities = dict(thing.probabilities)
                         return
-                self.vars = list(thing) # coerce to list
+                self.vars = list(sorted(thing)) # coerce to list
                 self.probabilities = {} # maps tuples of {T,F}^|vars| -> values
                 if populate:
                         self.each(populate)
 
         def __str__(self):
                 return output.factor(self.probabilities, self.vars)
-
+                
         # Access operations #
         
         def each(self, operation):

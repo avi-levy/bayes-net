@@ -127,8 +127,16 @@ class net(object):
                         variable, _factor = next(variables)
                         factors.append(_factor)
                         if variable is not query and variable not in known:
-                                factors = [factor.product(factors).sumOut(variable)]
+                                depends = doesnt = [] # HERE is the mistaske...?WS?W?WE?WE?WE?
+                                for f in factors:
+                                        (depends if variable in f.vars else doesnt).append(f)
+                                        #print "process %s , now dep = %s, doesn't = %s" % (f,depends, doesnt)
+                                print "|factors|=%s, |depends|=%s, |doesnt|=%s"%(len(factors),len(depends),len(doesnt))
+                                factors = doesnt
+                                factors.append(factor.product(depends).sumOut(variable))
+                        factors = [f for f in factors if f.vars]
                         output.elim(variable, factors)
+                        
                 return factor.product(factors).probabilities
                 
         def probability(self, event, evidence, algtype):
