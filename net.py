@@ -37,6 +37,41 @@ class net(object):
         def __repr__(self):
                 return "Net over %s:\n%s" % (self.nodes.keys(), self.nodes)
 
+        def enum(self, _variables, _evidence):
+                variables, evidence = list(_variables), dict(_evidence)
+
+                def next(variables):
+                        def noParents(variable):
+                                for parent in self.nodes[variable].parents:
+                                        if parent in variables:
+                                                return False
+                                return True
+                                
+                        orphans = filter(noParents, variables)
+                        return variables.pop(variables.index(min(orphans)))                
+
+                def product():
+                        ret = self.nodes[variable].probability(evidence)
+                        self.trace = variable
+                        if variables:
+                               multiplier, trace = self.enum(variables, evidence)
+                               self.trace = variable + " " + trace
+                               ret *= multiplier
+                        return ret
+                        
+                def sumOut(truth):
+                        evidence[variable] = truth
+                        return product()
+                        
+                variable = next(variables)
+                if variable in evidence.keys():
+                        ret = product()
+                else:
+                        ret = sum(map(sumOut,constants.truths))
+                
+                output.enum(evidence, self.trace, ret)
+                return (ret, self.trace)
+                
         def elim(self, query, evidence):
                 factors = []
                 variables = list(self.nodes.keys())
@@ -93,6 +128,7 @@ class net(object):
                         factors.append(_factor)
                         if variable is not query and variable not in known:
                                 factors = [factor.product(factors).sumOut(variable)]
+                        output.elim(variable, factors)
                 return factor.product(factors).probabilities
                 
         def probability(self, event, evidence, algtype):
@@ -100,38 +136,3 @@ class net(object):
                         evidence[event] = truth
                         return (truth,self.enum(self.nodes.keys(), evidence)[0])
                 return self.elim(event, evidence) if algtype else dict(map(explore,constants.truths))
-
-        def enum(self, _variables, _evidence):
-                variables, evidence = list(_variables), dict(_evidence)
-
-                def next(variables):
-                        def noParents(variable):
-                                for parent in self.nodes[variable].parents:
-                                        if parent in variables:
-                                                return False
-                                return True
-                                
-                        orphans = filter(noParents, variables)
-                        return variables.pop(variables.index(min(orphans)))                
-
-                def product():
-                        ret = self.nodes[variable].probability(evidence)
-                        self.trace = variable
-                        if variables:
-                               multiplier, trace = self.enum(variables, evidence)
-                               self.trace = variable + " " + trace
-                               ret *= multiplier
-                        return ret
-                        
-                def sumOut(truth):
-                        evidence[variable] = truth
-                        return product()
-                        
-                variable = next(variables)
-                if variable in evidence.keys():
-                        ret = product()
-                else:
-                        ret = sum(map(sumOut,constants.truths))
-                
-                output.enum(evidence, self.trace, ret)
-                return (ret, self.trace)

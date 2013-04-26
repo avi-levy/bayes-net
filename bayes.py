@@ -25,10 +25,6 @@ try:
                 )
         ).split("|")
 
-#        query = query.split('"')
-#        query = query[0] if len(query) is 1 else query[1]
-#        query = query.strip("P").strip("()")
-#        parts = query.split("|")
         event = parts[0]
 
         evidence = {}

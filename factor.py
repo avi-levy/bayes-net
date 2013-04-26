@@ -1,4 +1,5 @@
 import constants
+import output
 from functools import partial
 
 class factor(object):
@@ -12,14 +13,8 @@ class factor(object):
                 if populate:
                         self.each(populate)
 
-        def __repr__(self):
-#                ret = ""
-#                for key, value in self.probabilities.items():
-#                        for i in range(len(self.vars)):
-#                                ret += "%s=%s, " % (self.vars[i], key[i])
-#                        ret += ": %f\n" % value
-#                return ret
-                return self.probabilities.__repr__()
+        def __str__(self):
+                return output.factor(self.probabilities, self.vars)
 
         # Access operations #
         
