@@ -1,15 +1,17 @@
-from constants import constants
+import constants
 from functools import partial
 
 class factor(object):
-        def __init__(self, thing):
+        def __init__(self, thing, populate = None):
                 if isinstance(thing, factor): # copy constructor
                         self.vars = list(thing.vars)
                         self.probabilities = dict(thing.probabilities)
                         return
                 self.vars = list(thing) # coerce to list
                 self.probabilities = {} # maps tuples of {T,F}^|vars| -> values
-                return
+                if populate:
+                        self.each(populate)
+
         def __repr__(self):
 #                ret = ""
 #                for key, value in self.probabilities.items():

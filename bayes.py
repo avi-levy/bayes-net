@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from sys import argv
-from net import *
+from net import net
+import output
 
 usage = "usage: bayes <bayesnet> <enum|elim> <query>\n<bayesnet> is the name of the file containing the bayes net.\n<enum|elim> specify the algorithm to use.\n<query> is the probability to compute, specified in quotes."
 
@@ -15,34 +16,30 @@ try:
 except ValueError:
         exit("Unknown algorithm; please use enum or elim")
 try:
-        query = query.split('"')
-        if len(query) > 1:
-                query = query[1]
-        else:
-                query = query[0]
-        # Do this in two steps to avoid accidentally removing an initial or terminal P inside the parenthesis - since a variable is allowed to be named P
-        query = query.strip("P").strip("()")
-        # Now query looks like C|A=f,E=t or C
-        parts = query.split("|")
-        
-        var = parts[0]
-        assignments = {}
-        
-        if len(parts) > 1:
+        parts = (
+        lambda x: x.strip("P").strip("()"))(# remove the leading P for probability, then the parens
+                (lambda x: x[0] if len(x) is 1 else x[1])(# remove the unquoted part
+                        (lambda x: x.split('"'))(# allow extra quotes
+                                query
+                        )
+                )
+        ).split("|")
+
+#        query = query.split('"')
+#        query = query[0] if len(query) is 1 else query[1]
+#        query = query.strip("P").strip("()")
+#        parts = query.split("|")
+        event = parts[0]
+
+        evidence = {}
+        if len(parts) > 1: # allow empty conditionals
                 for term in parts[1].split(","):
                         if term:
                                 name, value = tuple(term.split("="))
-                                assignments[name] = value
+                                evidence[name] = value
 except Exception:
         exit('Could not parse query string. Make sure it is of this form, INCLUDING quotes: "P(C|A=f,E=t)" or "P(C)"')
         
-#print "You asked me to compute: %s | %s" % (var, assignments)
-
-bn = net(infile)
-
-#print "Start computation."
-result = bn.probability(var,assignments,algType)
-print "\nRESULT:"
-#for truth in net.truths:#"{0:.16f}".format
-#        print "P(%s = %s | %s) = %.16f" % (var, truth, assignments, result[truth])
-print result
+bayes = net(infile)
+original = dict(evidence)
+output.display(bayes.probability(event, evidence, algType), event, original)

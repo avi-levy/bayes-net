@@ -1,4 +1,4 @@
-from constants import constants
+import constants
 
 class event(object):
         def __init__(self, line):
