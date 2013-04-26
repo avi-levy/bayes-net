@@ -1,6 +1,6 @@
 from factor import factor
-from constants import constants
 from event import event
+import constants
 import output
 
 class net(object):
@@ -36,104 +36,6 @@ class net(object):
                                 
         def __repr__(self):
                 return "Net over %s:\n%s" % (self.nodes.keys(), self.nodes)
-        @staticmethod
-        def normalized(q):# assume q is nonempty
-                sum = 0.0
-                for k in q:
-                        sum += q[k]
-                for k in q:
-                        q[k] /= sum
-                return q
-
-        def factor(self, variable, evidence):
-                ''' Construct a factor '''
-                known = evidence.keys()
-                if variable in known:
-                        inputs = []
-                else:
-                        inputs = [variable]
-                for parent in self.nodes[variable].parents:
-                        if parent not in known:
-                                inputs.append(parent)
-
-                def process(semantic):
-                        augmented = dict(semantic.items() + evidence.items())
-                        return self.nodes[variable].probability(augmented)
-
-                ret = factor(inputs)                        
-                ret.each(process)
-                return ret
-
-        def elim(self, query, evidence):
-                factors = []
-                variables = list(self.nodes.keys())
-                known = evidence.keys()
-                
-                def makeFactor(variable, inputs):
-                        def process(semantic):
-                                augmented = dict(semantic.items() + evidence.items())
-                                return self.nodes[variable].probability(augmented)
-
-                        ret = factor(inputs)
-                        ret.each(process)
-                        return ret
-                                
-                def next(variables):
-                        def noChildren(variable):
-                                for another in variables:
-                                        if (another is not variable) and (variable in self.nodes[another].parents):
-                                                return False
-                                return True
-
-                        # make sure none of the remaining variables have us as a parent                                
-                        childless = filter(noChildren, variables)
-                        
-                        # TODO: rename dim to something more descriptive
-                        def dim(variable):
-                                inputs = [] if variable in known else [variable]
-                                for parent in self.nodes[variable].parents:
-                                        if parent not in known:
-                                                inputs.append(parent)
-                                return inputs
-
-                        # maintain a set of childless vars with minimal factor dimension
-                        small = {}
-                        for variable in childless:
-                                if not small:
-                                        inputs = dim(variable)
-                                        small = {variable: inputs}
-                                        smallest = len(inputs)
-                                else:
-                                        inputs = dim(variable)
-                                        size = len(inputs)
-                                        if size == smallest:
-                                                small[variable] = inputs
-                                        if size < smallest:
-                                                small = {variable: inputs}
-                                                smallest = size
-
-                        # return the alphabetically first small variable
-                        variable = min(small, key = small.get)
-                        variables.remove(variable)
-                        inputs = small[variable]
-                        return variable, makeFactor(variable, inputs)
-                        
-                while variables:
-                        variable, _factor = next(variables)
-                        factors.append(_factor)
-                        if variable is not query and variable not in known:
-                                factors = [factor.product(factors).sumOut(variable)]
-                return factor.product(factors).probabilities
-                
-        def probability(self, event, evidence, algtype):
-                if algtype is 0:
-                        q = {}
-                        for truth in constants.truths:
-                                evidence[event] = truth
-                                q[truth] = self.enum(self.nodes.keys(), evidence)[0]
-                else:
-                        q = self.elim(event, evidence)
-                return net.normalized(q)
 
         def enum(self, _variables, _evidence):
                 variables, evidence = list(_variables), dict(_evidence)
@@ -167,5 +69,70 @@ class net(object):
                 else:
                         ret = sum(map(sumOut,constants.truths))
                 
-                output.enum(evidence, self.trace, ret)        
+                output.enum(evidence, self.trace, ret)
                 return (ret, self.trace)
+                
+        def elim(self, query, evidence):
+                factors = []
+                variables = list(self.nodes.keys())
+                known = evidence.keys()
+                
+                def makeFactor(variable, inputs):
+                        def process(semantic):
+                                augmented = dict(semantic.items() + evidence.items())
+                                return self.nodes[variable].probability(augmented)
+                        return factor(inputs, process)
+                                
+                def next(variables):
+                        def noChildren(variable):
+                                for another in variables:
+                                        if (another is not variable) and (variable in self.nodes[another].parents):
+                                                return False
+                                return True
+
+                        # make sure none of the remaining variables have us as a parent                                
+                        childless = filter(noChildren, variables)
+                        
+                        def semantics(variable):
+                                ''' pre-compute the semantics of the factor table for variable '''
+                                semantic = [] if variable in known else [variable]
+                                for parent in self.nodes[variable].parents:
+                                        if parent not in known:
+                                                semantic.append(parent)
+                                return semantic
+
+                        # maintain a set of childless vars with minimal factor dimension
+                        small = {} # a dictionary mapping minimal factor variables to their semantics
+                        for variable in childless:
+                                if not small:
+                                        semantic = semantics(variable)
+                                        small = {variable: semantic}
+                                        smallest = len(semantic)
+                                else:
+                                        semantic = semantics(variable)
+                                        size = len(semantic)
+                                        if size == smallest:
+                                                small[variable] = semantic
+                                        if size < smallest:
+                                                small = {variable: semantic}
+                                                smallest = size
+
+                        # return the alphabetically first small variable
+                        variable = min(small, key = small.get)
+                        variables.remove(variable)
+                        semantic = small[variable]
+                        return variable, makeFactor(variable, semantic)
+                        
+                while variables:
+                        variable, _factor = next(variables)
+                        factors.append(_factor)
+                        if variable is not query and variable not in known:
+                                factors = [factor.product(factors).sumOut(variable)]
+                        output.elim(variable, factors)
+                return factor.product(factors).probabilities
+                
+        def probability(self, event, evidence, algtype):
+                def explore(truth):
+                        evidence[event] = truth
+                        return (truth,self.enum(self.nodes.keys(), evidence)[0])
+                return self.elim(event, evidence) if algtype else dict(map(explore,constants.truths))

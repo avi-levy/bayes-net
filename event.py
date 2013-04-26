@@ -1,4 +1,4 @@
-from constants import constants
+import constants
 
 class event(object):
         def __init__(self, line):
@@ -13,8 +13,6 @@ class event(object):
                 self.name = name.strip()
                 self.parents = parents.split()                
                 self.data = {}
-        def __repr__(self):
-                return "\nEvent %s | %s:\n%s" % (self.name, self.parents, self.data)                
 
         def read(self, line):
                 ''' Read a line from our conditional probability table '''
