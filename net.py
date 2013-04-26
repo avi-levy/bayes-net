@@ -128,11 +128,9 @@ class net(object):
                         factors.append(_factor)
                         if variable is not query and variable not in known:
                                 depends = []
-                                doesnt = [] # HERE is the mistaske...?WS?W?WE?WE?WE?
+                                doesnt = []
                                 for f in factors:
                                         (depends if variable in f.vars else doesnt).append(f)
-                                        #print "process %s , now dep = %s, doesn't = %s" % (f,depends, doesnt)
-                                print "|factors|=%s, |depends|=%s, |doesnt|=%s"%(len(factors),len(depends),len(doesnt))
                                 factors = doesnt
                                 factors.append(factor.product(depends).sumOut(variable))
                         factors = [f for f in factors if f.vars]

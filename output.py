@@ -1,5 +1,3 @@
-from operator import itemgetter
-
 def assign(tup):
         return "%s=%s" % tup
 def evString(evidence):
@@ -9,7 +7,7 @@ def enum(evidence, trace, ret):
         print "%s| %s = %1.8f" % (trace.ljust(14), ev.ljust(30), ret)
 
 def elim(variable, factors):
-        print "----- Variable:   %s -----\nFactors:\n%s\n" % (variable, "\n\n".join(map(str,factors)))
+        print "----- Variable:  %s -----\nFactors:\n%s\n" % (variable, "\n\n".join(map(str,factors)))
 
 def display(container, event, evidence):
         print "\nRESULT:"
@@ -28,10 +26,3 @@ def factor(probabilities, variables):
                 return ", ".join(map(out, enumerate(variables))) + ": %s" % value
 
         return "\n".join(map(entry, sorted(probabilities.items(), key=lambda x: x[0][::-1]))) # sort the values by key from outside in
-#        for key, value in self.probabilities.items():
-#                print ", ".join(map(out, enumerate(variables))) + ": %f" % value
-#                for i in range(len(self.vars)):
-#                        ret += "%s=%s, " % (self.vars[i], key[i])
-#                ret += ": %f\n" % value
-#        return ret
-        #                return self.probabilities.__repr__()
